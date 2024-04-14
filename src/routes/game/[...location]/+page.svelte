@@ -1,0 +1,17 @@
+<script lang="ts">
+	import Character from '$lib/components/Character.svelte';
+	import SceneWindow from '$lib/components/SceneWindow.svelte';
+	import Location from '$lib/components/Location.svelte';
+
+	let { data } = $props();
+
+	let character = $state(data.state.character);
+	let location = $state(data.state.location);
+</script>
+
+<main class="grid h-full grid-cols-8 grid-rows-8 gap-2 p-2">
+	<Location {location} />
+	<div class="col-span-3 flex items-center justify-center text-2xl text-primary">Eldergrove</div>
+	<SceneWindow gamestate={data.state} />
+	<Character {character} />
+</main>
