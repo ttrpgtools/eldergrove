@@ -48,8 +48,8 @@
 		},
 		itDied: {
 			[ENTER]() {
-				const coin = typeof npc.loot === 'string' ? rollFormula(npc.loot) : npc.loot ?? 0;
-				character.gp += coin;
+				const coin = typeof npc.coins === 'string' ? rollFormula(npc.coins) : npc.coins ?? 0;
+				character.coin += coin;
 				character.xp += npc?.exp ?? 0;
 				message.set(` You killed it and found ${coin} coins and earned ${npc.exp} experience.`);
 			},

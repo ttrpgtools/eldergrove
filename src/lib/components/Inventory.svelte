@@ -4,9 +4,19 @@
 	import * as Dialog from '$ui/dialog';
 	let { character, open = $bindable() }: { character: Character; open: boolean } = $props();
 	let shownItem: Item | undefined = $state();
+	const equippable = $derived(
+		shownItem &&
+			!character.isEquipped(shownItem) &&
+			(shownItem.type === 'armor' || shownItem.type === 'weapon')
+	);
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open
+	onOpenChange={(isOpen) => {
+		shownItem = undefined;
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Title>Inventory</Dialog.Title>
 		<Dialog.Description>
@@ -27,10 +37,19 @@
 						<p class="text-right">{entry.quantity}</p>
 					{/each}
 				</div>
-				<div>
-					<img src={shownItem?.image} alt={shownItem?.name} class=" aspect-square" />
-					{#if shownItem?.desc}
-						<p class="mt-4">{shownItem.desc}</p>
+				<div class="flex flex-col gap-2">
+					{#if shownItem}
+						<img src={shownItem?.image} alt={shownItem?.name} class=" aspect-square" />
+						{#if shownItem?.desc}
+							<p class="mt-4">{shownItem.desc}</p>
+						{/if}
+						<div class="flex justify-center">
+							{#if equippable}
+								<button type="button" class="nes-btn" onclick={() => character.autoEquip(shownItem)}
+									>Equip</button
+								>
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</div>

@@ -24,14 +24,18 @@ interface BaseItem extends Entity {
 	unique?: boolean;
 }
 
+export type EquipSlot = 'hand' | 'torso' | 'head' | 'feet';
+
 export interface Weapon extends BaseItem {
 	type: 'weapon';
+	where?: EquipSlot[] | EquipSlot;
 	damage: string;
 	// Minimum strength? Other requirements?
 }
 
 export interface Armor extends BaseItem {
 	type: 'armor';
+	where?: EquipSlot[] | EquipSlot;
 	defence: number;
 }
 
@@ -45,11 +49,23 @@ export interface Consumable extends BaseItem {
 
 export type Item = Weapon | Armor | Trinket | Consumable;
 
+export type Gear = {
+	right?: Item | undefined;
+	left?: Item | undefined;
+	head?: Item | undefined;
+	torso?: Item | undefined;
+	feet?: Item | undefined;
+};
+
 export interface ShopItem {
-	item: Item;
+	item: string | Item;
 	stock: number;
 	cost: number;
-	willBuy: number;
+	willBuy?: number | boolean;
+}
+
+export interface ShopItemInstance extends ShopItem {
+	item: Item;
 }
 
 interface TableOption<T> {
@@ -61,23 +77,27 @@ export interface RandomTable<T> {
 	formula?: string;
 	options: TableOption<T>[];
 }
+interface AdvancedEntity extends Entity {
+	coins?: number | string;
+	items?: RandomTable<string> | string[];
+}
 
-export interface NpcTemplate extends Entity {
-	maxHp: number;
-	loot: number | string;
+export interface Experience extends AdvancedEntity {
 	exp: number;
+}
+export interface NpcTemplate extends Experience {
+	maxHp: number;
 }
 
 export interface NpcInstance extends NpcTemplate {
 	hp: number;
 }
 
-export interface Location extends Entity {
+export interface Location extends AdvancedEntity {
 	biome: string;
 	actions: Action[];
 	parent?: string;
 	encounters?: RandomTable<string> | string[];
-	items?: RandomTable<string> | string[];
 	shop?: ShopItem[];
 }
 
@@ -94,6 +114,7 @@ export interface Encounter {
 	msg?: string;
 	flow?: 'fight' | 'shop';
 	npc?: NpcInstance;
+	shop?: ShopItemInstance[];
 	actions?: Action[];
 	location?: string | Location;
 }

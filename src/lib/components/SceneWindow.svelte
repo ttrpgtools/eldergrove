@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { ENTER, createMachine } from '$lib/util/fsm.svelte';
 	import { Messanger } from '$lib/util/messanger.svelte';
-	import type { Action, NpcInstance } from '$lib/types';
+	import type { Action, Item, NpcInstance, ShopItemInstance } from '$lib/types';
 	import NavigateMenu from './NavigateMenu.svelte';
 	import BattleMenu from './BattleMenu.svelte';
 	import { hasHp } from '$lib/util/validate';
 	import { invokeAction } from '$lib/util/actions';
 	import type { GameState } from '$lib/util/game.svelte';
+	import ShopMenu from './ShopMenu.svelte';
 
 	let {
 		gamestate
@@ -16,7 +17,10 @@
 
 	const msg = new Messanger();
 	let npc: NpcInstance | undefined = $state();
-	const entity = $derived(npc ?? gamestate.location.current);
+	let item: Item | undefined = $state();
+	const entity = $derived(item ?? npc ?? gamestate.location.current);
+
+	let shop: ShopItemInstance[] = $state([]);
 
 	let currentActions: Action[] | undefined = $state();
 	const actions = $derived(currentActions ?? gamestate.location.current.actions);
@@ -38,15 +42,23 @@
 				if (enc.msg) {
 					msg.set(enc.msg);
 				}
-				if (enc.npc) {
+				if (enc.flow === 'shop' && enc.shop) {
+					shop = enc.shop;
+					game.goShopping();
+				}
+				if (enc.npc && enc.flow === 'fight') {
 					npc = enc.npc;
 					game.startFight();
 				}
 			},
-			startFight: 'fight'
+			startFight: 'fight',
+			goShopping: 'shop'
 		},
 		fight: {
 			fightOver: 'exploring'
+		},
+		shop: {
+			done: 'exploring'
 		}
 	});
 </script>
@@ -77,5 +89,14 @@
 		<NavigateMenu {gamestate} {actions} onact={game.act} />
 	{:else if game.state === 'fight' && npc}
 		<BattleMenu character={gamestate.character} {npc} ondone={game.fightOver} message={msg} />
+	{:else if game.state === 'shop'}
+		<ShopMenu
+			character={gamestate.character}
+			purse={gamestate.location.current}
+			{shop}
+			message={msg}
+			ondone={game.done}
+			onviewitem={(sel: Item | undefined) => item = sel}
+		/>
 	{/if}
 </div>

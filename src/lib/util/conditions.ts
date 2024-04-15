@@ -6,6 +6,12 @@ const conditions: Record<string, ConditionPredicate> = {
 	xpMoreThan(state: GameState, amt: number) {
 		console.log(`Checking ${state.character.xp} xpMoreThan ${amt}`);
 		return state.character.xp > amt;
+	},
+	hasFlag(state: GameState, flag: string) {
+		return state.character.flags.has(flag);
+	},
+	doesNotHaveFlag(state: GameState, flag: string) {
+		return !state.character.flags.has(flag);
 	}
 };
 

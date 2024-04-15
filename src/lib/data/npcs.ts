@@ -7,7 +7,7 @@ const npcTemplates: NpcTemplate[] = [
 		image: 'https://assets.codepen.io/2292558/ratt.webp',
 		desc: 'It definitely sees you. You might want to hurry.',
 		maxHp: 5,
-		loot: 5,
+		coins: 5,
 		exp: 5
 	},
 	{
@@ -16,7 +16,7 @@ const npcTemplates: NpcTemplate[] = [
 		image: '/img/goblin.webp',
 		desc: 'Oof. Why are there so many of these guys?',
 		maxHp: 25,
-		loot: 40,
+		coins: 40,
 		exp: 50
 	},
 	{
@@ -25,7 +25,7 @@ const npcTemplates: NpcTemplate[] = [
 		image: '/img/scorpion.webp',
 		desc: `See the green? I bet that's poisonous.`,
 		maxHp: 15,
-		loot: 15,
+		coins: 15,
 		exp: 20
 	},
 	{
@@ -34,7 +34,7 @@ const npcTemplates: NpcTemplate[] = [
 		image: '/img/wolf.webp',
 		desc: `Don't these things hunt in packs? Are you sure it's alone?`,
 		maxHp: 30,
-		loot: 45,
+		coins: 45,
 		exp: 70
 	}
 ];
@@ -45,7 +45,7 @@ const namedNpcs: NpcInstance[] = [
 		name: 'Giselle',
 		maxHp: 10,
 		hp: 10,
-		loot: `2d20`,
+		coins: `2d20`,
 		exp: 10
 	}
 ];

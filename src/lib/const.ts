@@ -2,5 +2,6 @@ export const ActionName = {
 	GoBack: 'goBack',
 	Navigate: 'navigate',
 	RandomEncounter: 'randomEncounter',
-	Clear: 'clear'
+	Clear: 'clear',
+	Shop: 'shop'
 } as const;

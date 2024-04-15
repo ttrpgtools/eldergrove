@@ -1,6 +1,8 @@
 import { ActionName } from '$lib/const';
+import { getItem } from '$lib/data/items';
 import { getNpcInstance } from '$lib/data/npcs';
 import type { ActionType, Encounter, RandomTable } from '$lib/types';
+import { resolveList } from './async';
 import { rollFormula } from './dice';
 import type { GameState } from './game.svelte';
 
@@ -44,6 +46,15 @@ const actions: Record<ActionType, ActionFn> = {
 		const results = rollOnTable(scene.encounters);
 		if (results.length === 0) return noEncounter;
 		return await makeFightEncounter(results[0]);
+	},
+	async shop(state: GameState, msg?: string) {
+		if (!state.location.current.shop) return noEncounter;
+		const fullshop = await resolveList(state.location.current.shop, 'item', getItem);
+		return {
+			flow: `shop`,
+			shop: fullshop,
+			msg
+		};
 	},
 	async navigate(_: GameState, location: string) {
 		return {

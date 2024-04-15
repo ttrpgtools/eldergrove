@@ -7,8 +7,19 @@ const items: Item[] = [
 		name: 'Rusty Dagger',
 		icon: '',
 		image: '/img/rusty-dagger.webp',
-		damage: 'd4',
+		damage: 'd4-1',
+		where: 'hand',
 		desc: `Ooo... tetanus! Maybe you can open your mail with it.`
+	},
+	{
+		type: 'weapon',
+		id: 'iron-dagger',
+		name: 'Iron Dagger',
+		icon: '',
+		image: '/img/iron-dagger.webp',
+		damage: 'd4',
+		where: 'hand',
+		desc: `Simple, sharp and not rusty. Nice.`
 	},
 	{
 		type: 'armor',
@@ -17,6 +28,7 @@ const items: Item[] = [
 		icon: '',
 		image: '/img/cloth-armor.webp',
 		defence: 0,
+		where: 'torso',
 		desc: `I think we all know that calling this armor is being generous. But it was what you washed up with.`
 	},
 	{
@@ -26,6 +38,7 @@ const items: Item[] = [
 		icon: '',
 		image: '/img/wooden-shield.webp',
 		defence: 1,
+		where: 'hand',
 		desc: `Simple but effective, if you know how to use it. And you seem to.`
 	},
 	{

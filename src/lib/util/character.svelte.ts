@@ -1,4 +1,4 @@
-import type { InventoryItem, Item } from '$lib/types';
+import type { Gear, InventoryItem, Item } from '$lib/types';
 import { rollFormula } from './dice';
 import { getItem } from '../data/items';
 import { defined } from './array';
@@ -13,18 +13,11 @@ export async function createNewCharacter(): Promise<Character> {
 	return newHero;
 }
 
-type Gear = {
-	right?: Item | undefined;
-	left?: Item | undefined;
-	head?: Item | undefined;
-	torso?: Item | undefined;
-	feet?: Item | undefined;
-};
-
 export class Character {
+	name = $state('Stranger');
 	hp = $state(10);
 	maxHp = $state(10);
-	gp = $state(150);
+	coin = $state(30);
 	xp = $state(0);
 	level = $state(1);
 	inventory: InventoryItem[] = $state([]);
@@ -93,11 +86,43 @@ export class Character {
 		this.gear[where] = item;
 	}
 
+	autoEquip(item: Item | undefined) {
+		console.log(`Auto equipping ${item?.name}`);
+		if (!item || (item.type !== 'armor' && item.type !== 'weapon')) return;
+		const attempted: (keyof Gear)[] = (
+			typeof item.where === 'string' ? [item.where] : item.where ?? []
+		).flatMap((eq) => (eq === 'hand' ? ['right', 'left'] : eq));
+		if (attempted.length === 0) {
+			// TODO Auto infer from name?
+			// For now... fail
+			return;
+		}
+		// Set to first unoccupied slot
+		const unoccupied = attempted.find((eqs) => !this.gear[eqs]);
+		if (unoccupied) {
+			this.equipItem(item, unoccupied);
+			this.removeFromInventory(item);
+			return unoccupied;
+		}
+		const preferred = attempted[0];
+		this.unequip(preferred);
+		this.removeFromInventory(item);
+		this.equipItem(item, preferred);
+		return preferred;
+	}
+
 	async unequip(where: keyof Gear) {
 		const item = this.gear[where];
 		if (item) {
 			this.gear[where] = undefined;
 			this.addToInventory(item);
 		}
+	}
+
+	isEquipped(item: string | Item) {
+		if (typeof item !== 'string') {
+			item = item.id;
+		}
+		return this.equipped.find((eq) => eq.id === item);
 	}
 }

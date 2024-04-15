@@ -1,7 +1,7 @@
 import { ActionName } from '$lib/const';
 import type { Action, Location } from '$lib/types';
 
-const BACK: Action = { action: ActionName.GoBack, label: 'Go Back' };
+const BACK: (l?: string) => Action = (label = 'Leave') => ({ action: ActionName.GoBack, label });
 
 const locations: Location[] = [
 	{
@@ -12,7 +12,7 @@ const locations: Location[] = [
 		actions: [
 			{ action: 'navigate', arg: 'pylaim', label: 'Head to Town' },
 			{ action: ActionName.RandomEncounter, label: 'Whoops' },
-			BACK
+			BACK('Go Back')
 		],
 		desc: `
     You wake up on the beach. Some beach. You don't recall who you
@@ -68,7 +68,12 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/weapon-shop.webp',
 		parent: 'pylaim',
-		actions: [BACK],
+		actions: [
+			{ action: 'shop', label: 'Browse Goods', arg: `There isn't much but it's well made.` },
+			BACK('Leave Shop')
+		],
+		shop: [{ item: 'iron-dagger', stock: 5, cost: 10, willBuy: true }],
+		coins: 35,
 		desc: `Weapons and a beautiful woman behind the counter.`
 	},
 	{
@@ -77,7 +82,11 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/armor-shop.webp',
 		parent: 'pylaim',
-		actions: [BACK],
+		actions: [
+			{ action: 'shop', label: 'Browse Goods', arg: `Behold the finest armor around!` },
+			BACK('Leave Shop')
+		],
+		shop: [{ item: 'wooden-shield', stock: 5, cost: 5, willBuy: true }],
 		desc: `An oddly wide range of armor is available.`
 	},
 	{
@@ -86,7 +95,7 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/general-store.webp',
 		parent: 'pylaim',
-		actions: [BACK],
+		actions: [BACK()],
 		desc: `What will you have?`
 	},
 	{
@@ -95,8 +104,8 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/fortune-teller.webp',
 		parent: 'pylaim',
-		actions: [BACK],
-		desc: `I can't find my pendant, I think I lost it somewhere in the field.`
+		actions: [BACK()],
+		desc: `A mysterious woman in a mysterious tent. I'm sure this will be fine.`
 	}
 ];
 const locationMap = new Map<string, Location>(locations.map((loc) => [loc.id, loc]));
