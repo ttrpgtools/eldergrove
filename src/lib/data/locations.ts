@@ -10,15 +10,30 @@ const locations: Location[] = [
 		biome: 'beach',
 		image: '/img/opening.webp',
 		actions: [
-			{ action: 'navigate', arg: 'pylaim', label: 'Head to Town' },
-			{ action: ActionName.RandomEncounter, label: 'Whoops' },
-			BACK('Go Back')
+			{ action: 'navigate', arg: 'starting-beach', label: 'Walk Down Beach' },
+			{ action: 'navigate', arg: 'unknown-woods', label: 'Enter Woods' }
 		],
 		desc: `
-    You wake up on the beach. Some beach. You don't recall who you
-    are. You are wearing a damp torn robe and you have a rusty dagger
+    You wake up on a beach. Your head hurts. You don't recall who you
+    are. You are wearing a torn, damp robe and you have a rusty dagger
     strapped to your leg. You feel... salty. You see a village not too
-    far away, maybe someone knows you there.
+    far away, maybe someone knows you there. Behind you the beach ends
+    at the edge of the woods.
+    `
+	},
+	{
+		id: 'starting-beach',
+		name: 'Quaint Beach',
+		biome: 'beach',
+		image: '/img/starting-beach.webp',
+		encounters: ['crab', 'sandpiper'],
+		actions: [
+			{ action: 'randomEncounter', label: 'Explore' },
+			{ action: 'navigate', arg: 'pylaim', label: 'Into Town' }
+		],
+		desc: `
+    The sand is firm beneath your feet and the water is warm.
+    A few creatures scuttle around. 
     `
 	},
 	{

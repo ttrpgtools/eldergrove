@@ -11,6 +11,24 @@ const npcTemplates: NpcTemplate[] = [
 		exp: 5
 	},
 	{
+		id: 'crab',
+		name: 'Crab',
+		image: '/img/crab.webp',
+		desc: `Ornery and pinchy, not a great combo.`,
+		maxHp: 5,
+		coins: 'd4',
+		exp: 5
+	},
+	{
+		id: 'sandpiper',
+		name: 'Sand Piper',
+		image: '/img/sandpiper.webp',
+		desc: `Just looking for something to eat in the sand.`,
+		maxHp: 3,
+		coins: 'd4',
+		exp: 5
+	},
+	{
 		id: 'goblin',
 		name: 'Goblin',
 		image: '/img/goblin.webp',

@@ -10,8 +10,10 @@
 </script>
 
 <main class="grid h-full grid-cols-8 grid-rows-8 gap-2 p-2">
+	<div class=" col-span-3 flex items-center justify-center">
+		<img src="/img/eldergrove-banner.webp" alt="Eldergrove" />
+	</div>
 	<Location {location} />
-	<div class="col-span-3 flex items-center justify-center text-2xl text-primary">Eldergrove</div>
 	<SceneWindow gamestate={data.state} />
 	<Character {character} />
 </main>

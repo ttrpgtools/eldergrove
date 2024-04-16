@@ -11,11 +11,13 @@ export interface Entity extends Identifiable, Named {
 
 export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
 
+type Conditional = string | { condition: string; arg: unknown };
+
 export type ActionType = (typeof ActionName)[keyof typeof ActionName];
 export interface Action {
 	action: ActionType;
 	label?: string;
-	show?: string | { condition: string; arg: unknown };
+	show?: Conditional;
 	arg?: unknown;
 }
 
@@ -71,6 +73,7 @@ export interface ShopItemInstance extends ShopItem {
 interface TableOption<T> {
 	trigger: number | [number, number];
 	value: T;
+	active?: Conditional;
 }
 
 export interface RandomTable<T> {
@@ -80,6 +83,8 @@ export interface RandomTable<T> {
 interface AdvancedEntity extends Entity {
 	coins?: number | string;
 	items?: RandomTable<string> | string[];
+	enter?: Action;
+	exit?: Action;
 }
 
 export interface Experience extends AdvancedEntity {
