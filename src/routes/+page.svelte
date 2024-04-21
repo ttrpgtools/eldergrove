@@ -14,7 +14,7 @@
 		>
 	</div>
 	<div class="flex w-full max-w-6xl gap-4 p-8">
-		<Button href="/game/test">Play New Game (Pre-Alpha)</Button>
+		<Button href="/game">Choose a New Game (Pre-Alpha)</Button>
 		<Button><del>Login</del></Button>
 	</div>
 </main>
