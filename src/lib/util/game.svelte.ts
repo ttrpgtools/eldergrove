@@ -17,10 +17,10 @@ export type GameState = GameStateImpl;
  * Singleton location manager.
  */
 let state: GameState | undefined;
-export async function getGameState(): Promise<GameState> {
+export async function getGameState(location: string): Promise<GameState> {
 	if (!state) {
 		const char = await createNewCharacter();
-		const loc = await getLocationManager();
+		const loc = await getLocationManager(location);
 		state = new GameStateImpl(char, loc);
 	}
 	return state;

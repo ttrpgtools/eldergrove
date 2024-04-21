@@ -4,17 +4,27 @@ const biomes: Entity[] = [
 	{
 		id: 'meadow',
 		name: 'Sunny Meadow',
-		image: '/img/sunny-meadow.webp'
+		image: '/img/biome/sunny-meadow.webp'
 	},
 	{
 		id: 'town',
 		name: 'Town',
-		image: '/img/town.webp'
+		image: '/img/biome/town.webp'
 	},
 	{
 		id: 'beach',
 		name: 'Beach',
-		image: '/img/beach.webp'
+		image: '/img/biome/beach.webp'
+	},
+	{
+		id: 'rocky',
+		name: 'Rocky',
+		image: '/img/biome/rocky.webp'
+	},
+	{
+		id: 'forest',
+		name: 'Forest',
+		image: '/img/biome/forest.webp'
 	}
 ];
 const biomeMap = new Map<string, Entity>(biomes.map((bio) => [bio.id, bio]));

@@ -12,6 +12,9 @@ const conditions: Record<string, ConditionPredicate> = {
 	},
 	doesNotHaveFlag(state: GameState, flag: string) {
 		return !state.character.flags.has(flag);
+	},
+	atLeastLevel(state: GameState, level: number) {
+		return state.character.level >= level;
 	}
 };
 

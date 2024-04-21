@@ -8,6 +8,7 @@
 	import { invokeAction } from '$lib/util/actions';
 	import type { GameState } from '$lib/util/game.svelte';
 	import ShopMenu from './ShopMenu.svelte';
+	import { npcLabel } from '$lib/util/npc';
 
 	let {
 		gamestate
@@ -72,7 +73,7 @@
 	{#if entity}
 		{#if hasHp(entity)}
 			<p class="mb-3 flex justify-between text-xl">
-				<span>{entity.name}</span>
+				<span>{npcLabel(entity)}</span>
 				<span>{entity.hp} / {entity.maxHp}</span>
 			</p>
 		{:else if !gamestate.location.nameAlreadyShown(entity.name)}
