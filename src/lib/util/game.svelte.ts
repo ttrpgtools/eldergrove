@@ -1,3 +1,4 @@
+import type { GameDef } from '$lib/types';
 import { createNewCharacter, type Character } from './character.svelte';
 import { getLocationManager, type LocationManager } from './location.svelte';
 
@@ -17,10 +18,10 @@ export type GameState = GameStateImpl;
  * Singleton location manager.
  */
 let state: GameState | undefined;
-export async function getGameState(location: string): Promise<GameState> {
+export async function getGameState(game: GameDef): Promise<GameState> {
 	if (!state) {
-		const char = await createNewCharacter();
-		const loc = await getLocationManager(location);
+		const char = await createNewCharacter(game.baseChar);
+		const loc = await getLocationManager(game.start);
 		state = new GameStateImpl(char, loc);
 	}
 	return state;

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { Character } from '$lib/util/character.svelte';
+	import { evaluateDiceRoll } from '$lib/util/dice';
 	import Icon from '$ui/Icon.svelte';
 	import GearSlot from './GearSlot.svelte';
 	import Inventory from './Inventory.svelte';
 	let { character }: { character: Character } = $props();
 	let inventoryOpen = $state(false);
 	let fullHp = $derived(`${character.hp}/${character.maxHp}`);
+	const ctx = $derived({ str: 5, dex: 3, wil: 3, hp: character.hp, coin: character.coin });
 </script>
 
 <div class="pixel-corners col-span-5 row-span-5 p-4">
@@ -29,7 +31,7 @@
 			<button
 				type="button"
 				class="nes-btn"
-				onclick={() => character.equipItem('wooden-shield', 'left')}>Map</button
+				onclick={() => console.log(evaluateDiceRoll(`d(2*d[coin] + 5)`, ctx))}>Map</button
 			>
 		</div>
 		<div class="col-span-3">

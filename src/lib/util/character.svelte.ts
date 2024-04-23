@@ -1,15 +1,25 @@
-import type { Gear, InventoryItem, Item } from '$lib/types';
+import type { GameDef, Gear, InventoryItem, Item } from '$lib/types';
 import { rollFormula } from './dice';
 import { getItem } from '../data/items';
 import { defined } from './array';
 import { Set } from 'svelte/reactivity';
 
-export async function createNewCharacter(): Promise<Character> {
+export async function createNewCharacter(baseChar: GameDef['baseChar']): Promise<Character> {
 	const newHero = new Character();
-	await newHero.equipItem('rusty-dagger', 'right');
-	await newHero.equipItem('tattered-robes', 'torso');
-	await newHero.addToInventory('health-potion-sm', 10);
-	await newHero.addToInventory('mystery-object');
+	newHero.maxHp = baseChar.hp;
+	newHero.hp = baseChar.hp;
+	newHero.coin = baseChar.coin;
+	newHero.str = baseChar.str;
+	newHero.dex = baseChar.dex;
+	newHero.wil = baseChar.wil;
+	newHero.xp = baseChar.exp;
+	newHero.level = baseChar.level;
+	for await (const item of baseChar.equip) {
+		await newHero.equipItem(item[0], item[1]);
+	}
+	for await (const item of baseChar.inventory) {
+		await newHero.addToInventory(item[0], item[1]);
+	}
 	return newHero;
 }
 
@@ -20,6 +30,9 @@ export class Character {
 	coin = $state(30);
 	xp = $state(0);
 	level = $state(1);
+	str = $state(4);
+	dex = $state(3);
+	wil = $state(3);
 	inventory: InventoryItem[] = $state([]);
 	gear: Gear = $state({});
 	equipped = $derived(

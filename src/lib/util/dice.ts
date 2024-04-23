@@ -47,9 +47,29 @@ function parseTerm(term: string) {
  */
 export function rollFormula(formula: string) {
 	if (!formula) return 0;
-	//console.log(`formula = ${formula}`);
+	console.log(`formula = ${formula}`);
 	const terms = formula.replace(/\s/g, '').replace(/(\d)-/g, '$1+-').split('+');
 	const value = terms.reduce((p, c) => p + parseTerm(c), 0);
-	//console.log(value);
+	console.log(value);
 	return value;
+}
+
+export function evaluateDiceRoll(expression: string, context: Record<string, number> = {}) {
+	console.log(`Evaluating = ${expression}`, context);
+	expression = expression.replace(/\[([^\]]+)\]/g, (_, key) => {
+		if (key in context) {
+			return context[key].toString();
+		} else {
+			throw new Error(`Context key '${key}' not found from '${expression}'`);
+		}
+	});
+
+	// Evaluate sub-expressions recursively
+	while (expression.includes('(')) {
+		expression = expression.replace(/\(([^()]+)\)/g, (_, subExpr) =>
+			evaluateDiceRoll(subExpr, context).toString()
+		);
+	}
+
+	return rollFormula(expression);
 }

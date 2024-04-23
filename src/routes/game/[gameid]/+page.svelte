@@ -1,16 +1,19 @@
 <script lang="ts">
-	import { Button } from '$ui/button';
+	import Character from '$lib/components/Character.svelte';
+	import SceneWindow from '$lib/components/SceneWindow.svelte';
+	import Location from '$lib/components/Location.svelte';
+
 	let { data } = $props();
-	let game = data.game;
+
+	let character = $state(data.state.character);
+	let location = $state(data.state.location);
 </script>
 
-<main class="flex flex-col items-center">
-	<header class="w-full max-w-6xl">
+<main class="grid h-full grid-cols-8 grid-rows-8 gap-2 p-2">
+	<div class=" col-span-3 flex items-center justify-center">
 		<img src="/img/eldergrove-banner.webp" alt="Eldergrove" />
-		<h1 class="p-8 text-3xl">{game.name}</h1>
-	</header>
-	<div class="w-full max-w-6xl p-8">
-		<p class="mb-8">{game.desc}</p>
-		<Button href={`/game/${game.id}/${game.start}`}>Play {game.name}</Button>
 	</div>
+	<Location {location} />
+	<SceneWindow gamestate={data.state} />
+	<Character {character} />
 </main>

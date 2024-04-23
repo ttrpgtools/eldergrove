@@ -123,3 +123,18 @@ export interface Encounter {
 	actions?: Action[];
 	location?: string | Location;
 }
+
+export interface GameDef extends Entity {
+	start: string;
+	baseChar: {
+		hp: number;
+		coin: number;
+		str: number;
+		dex: number;
+		wil: number;
+		exp: number;
+		level: number;
+		inventory: [string, number][];
+		equip: [string, keyof Gear][];
+	};
+}

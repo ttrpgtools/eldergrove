@@ -1,14 +1,21 @@
-import type { Entity } from '$lib/types';
-
-interface GameDef extends Entity {
-	start: string;
-}
+import type { GameDef } from '$lib/types';
 
 const games: GameDef[] = [
 	{
 		id: 'yearlings',
 		name: 'Yearlings',
 		start: 'yearlings/grassy-field',
+		baseChar: {
+			hp: 30,
+			coin: 150,
+			str: 4,
+			dex: 3,
+			wil: 3,
+			exp: 0,
+			level: 1,
+			inventory: [],
+			equip: [['yearlings/rapier', 'right']]
+		},
 		desc: `
     This is the OG game that inspired this game engine and while this isn't fully faithful to the
     original version, it is pretty close. The images are new obviously.
@@ -18,6 +25,20 @@ const games: GameDef[] = [
 		id: 'discovery',
 		name: 'Discovery',
 		start: 'opening',
+		baseChar: {
+			hp: 10,
+			coin: 30,
+			str: 4,
+			dex: 3,
+			wil: 3,
+			exp: 0,
+			level: 1,
+			inventory: [['mystery-object', 1]],
+			equip: [
+				['rusty-dagger', 'right'],
+				['tattered-robes', 'torso']
+			]
+		},
 		desc: `This is the temporary (or not) title of the reboot game being created for this engine.`
 	}
 ];

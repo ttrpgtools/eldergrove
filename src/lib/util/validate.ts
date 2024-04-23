@@ -1,6 +1,6 @@
 import type { Entity, HasHealth, Identifiable, Named } from '$lib/types';
 
-const numberlike = /^-?\d+$/;
+const numberlike = /^-?\d+(\.\d+)?$/;
 
 export function isNumeric(potential: string) {
 	return numberlike.test(potential);

@@ -1,12 +1,14 @@
 import type { NpcInstance } from '$lib/types';
 import type { Character } from './character.svelte';
-import { rolls, total } from './dice';
+import { evaluateDiceRoll } from './dice';
 import { isCharUpperCase, isVowel } from './validate';
 
 export function attackNpc(npc: NpcInstance | undefined, character: Character) {
 	// TODO: What are the mechanics going to be?
 	if (!npc) return;
-	const damage = total(rolls(4, character.level));
+	const weaponDmg =
+		character.gear.right?.type === 'weapon' ? character.gear.right.damage : `d4 + [@str]`;
+	const damage = evaluateDiceRoll(weaponDmg, { '@str': character.str });
 	npc.hp = Math.max(0, npc.hp - damage);
 	return damage;
 }
