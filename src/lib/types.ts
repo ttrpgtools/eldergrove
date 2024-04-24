@@ -22,16 +22,33 @@ export interface Action {
 }
 
 //type ItemType = 'weapon' | 'armor' | 'trinket' | 'consumable';
-interface BaseItem extends Entity {
-	unique?: boolean;
-}
 
 export type EquipSlot = 'hand' | 'torso' | 'head' | 'feet';
 
+type AttackType = 'physical' | 'elemental' | 'mental';
+type HealingType = 'medicinal' | 'magical' | 'spiritual';
+
+export interface Attack extends Entity {
+	type: 'attack';
+	nature: AttackType;
+	amount: string;
+}
+
+export interface Healing extends Entity {
+	type: 'healing';
+	nature: HealingType;
+	amount: string;
+}
+
+export type Effect = Attack | Healing;
+
+interface BaseItem extends Entity {
+	unique?: boolean;
+	effects?: Effect[];
+}
 export interface Weapon extends BaseItem {
 	type: 'weapon';
 	where?: EquipSlot[] | EquipSlot;
-	damage: string;
 	// Minimum strength? Other requirements?
 }
 
@@ -83,8 +100,9 @@ export interface RandomTable<T> {
 interface AdvancedEntity extends Entity {
 	coins?: number | string;
 	items?: RandomTable<string> | string[];
-	enter?: Action;
-	exit?: Action;
+	enter?: Action[];
+	exit?: Action[];
+	effects?: Effect[];
 }
 
 export interface Experience extends AdvancedEntity {

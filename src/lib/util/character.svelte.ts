@@ -1,5 +1,5 @@
 import type { GameDef, Gear, InventoryItem, Item } from '$lib/types';
-import { rollFormula } from './dice';
+import { evaluateDiceRoll, rollFormula } from './dice';
 import { getItem } from '../data/items';
 import { defined } from './array';
 import { Set } from 'svelte/reactivity';
@@ -23,6 +23,10 @@ export async function createNewCharacter(baseChar: GameDef['baseChar']): Promise
 	return newHero;
 }
 
+const THRESHOLDS = [
+	90, 210, 400, 630, 900, 1200, 1550, 1950, 2400, 2900, 3450, 4050, 4700, 5400, 6200
+];
+
 export class Character {
 	name = $state('Stranger');
 	hp = $state(10);
@@ -42,15 +46,28 @@ export class Character {
 	);
 	flags = new Set<string>();
 
-	inflictDamage(formula: string) {
+	inflictDamage(formula: string, ctx: Record<string, number>) {
 		// TODO: figure this out
-		const damage = rollFormula(formula);
+		const damage = Math.max(evaluateDiceRoll(formula, ctx), 0);
 		const toHit = rollFormula('d6');
 		if (toHit >= 3) {
 			this.hp = Math.max(0, this.hp - damage);
 			return damage;
 		}
 		return 0;
+	}
+
+	gainExperience(amount: number) {
+		if (!amount) return false;
+		this.xp += amount;
+		if (this.xp > THRESHOLDS[this.level - 1]) {
+			this.level += 1;
+			this.str += 2;
+			this.dex += 2;
+			this.maxHp += 8;
+			return true;
+		}
+		return false;
 	}
 
 	#getInventoryItem(item: Item | string) {

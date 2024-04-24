@@ -3,7 +3,7 @@
 
 	import type { NpcInstance } from '$lib/types';
 	import type { Character } from '$lib/util/character.svelte';
-	import { attackNpc, npcLabel } from '$lib/util/npc';
+	import { attackNpc, getNextNpcAttack, npcLabel } from '$lib/util/npc';
 	import { ENTER, createMachine } from '$lib/util/fsm.svelte';
 	import type { Messanger } from '$lib/util/messanger.svelte';
 
@@ -35,7 +35,13 @@
 				this.counter.debounce(2000); // Computer thinking time :)
 			},
 			counter: () => {
-				const dmg = character.inflictDamage('d4');
+				const atk = getNextNpcAttack(npc);
+				const ctx: Record<string, number> = {
+					'@maxhp': npc.maxHp,
+					'#dex': character.dex,
+					'#armor': character.gear.torso?.type === 'armor' ? character.gear.torso.defence : 0
+				};
+				const dmg = character.inflictDamage(atk.amount, ctx);
 				message.set(
 					dmg === 0
 						? `${npcLabel(npc, true)} missed you!`
@@ -52,10 +58,13 @@
 			[ENTER]() {
 				const coin = typeof npc.coins === 'string' ? rollFormula(npc.coins) : npc.coins ?? 0;
 				character.coin += coin;
-				character.xp += npc?.exp ?? 0;
+				const leveled = character.gainExperience(npc.exp ?? 0);
 				message.set(
 					` You killed ${npcLabel(npc, true, false)} and found ${coin} coins and earned ${npc.exp} experience.`
 				);
+				if (leveled) {
+					message.append(` You leveled up!`);
+				}
 			},
 			leave: ondone
 		},

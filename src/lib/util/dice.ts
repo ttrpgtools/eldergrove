@@ -36,9 +36,10 @@ function parseTerm(term: string) {
 	if (!term) return 0;
 	//console.log(`term = ${term}`);
 	const factors = term.split('*');
-	const value = factors.reduce((p, c) => p * (isNumeric(c) ? parseInt(c, 10) : parseFactor(c)), 1);
-	//console.log(value);
-	return value;
+	const value = factors.reduce((p, c) => p * (isNumeric(c) ? parseFloat(c) : parseFactor(c)), 1);
+	const roundedDown = value - (value % 1);
+	//console.log(roundedDown);
+	return roundedDown;
 }
 
 /**
