@@ -3,5 +3,9 @@ export const ActionName = {
 	Navigate: 'navigate',
 	RandomEncounter: 'randomEncounter',
 	Clear: 'clear',
-	Shop: 'shop'
+	Shop: 'shop',
+	SetFlag: 'setFlag',
+	ClearFlag: 'clearFlag',
+	Chat: 'chat',
+	YesNo: 'yesno'
 } as const;

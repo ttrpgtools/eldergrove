@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Item } from '$lib/types';
 	import type { Character } from '$lib/util/character.svelte';
+	import { canHeal } from '$lib/util/item';
+	import Button from '$ui/button/button.svelte';
 	import * as Dialog from '$ui/dialog';
 	let { character, open = $bindable() }: { character: Character; open: boolean } = $props();
 	let shownItem: Item | undefined = $state();
@@ -9,6 +11,7 @@
 			!character.isEquipped(shownItem) &&
 			(shownItem.type === 'armor' || shownItem.type === 'weapon')
 	);
+	const usable = $derived(shownItem ? canHeal(shownItem) : false);
 </script>
 
 <Dialog.Root
@@ -43,11 +46,14 @@
 						{#if shownItem?.desc}
 							<p class="mt-4">{shownItem.desc}</p>
 						{/if}
-						<div class="flex justify-center">
+						<div class="flex flex-col gap-4">
 							{#if equippable}
 								<button type="button" class="nes-btn" onclick={() => character.autoEquip(shownItem)}
 									>Equip</button
 								>
+							{/if}
+							{#if usable}
+								<Button onclick={() => character.useItem(shownItem)}>Use</Button>
 							{/if}
 						</div>
 					{/if}

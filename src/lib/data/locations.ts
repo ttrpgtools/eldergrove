@@ -191,7 +191,7 @@ const locations: Location[] = [
 			{ action: 'navigate', arg: 'yearlings/pylaim/general', label: 'General' },
 			{
 				action: 'navigate',
-				arg: 'pylaim/teller',
+				arg: 'yearlings/pylaim/teller',
 				label: 'Fortune Teller'
 			}
 		],
@@ -261,6 +261,7 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/fortune-teller.webp',
 		parent: 'yearlings/pylaim',
+		enter: [{ action: 'chat', arg: `Hello dearie!` }],
 		actions: [BACK()],
 		desc: `A mysterious woman in a mysterious tent. I'm sure this will be fine.`
 	},

@@ -3,6 +3,7 @@ import { evaluateDiceRoll, rollFormula } from './dice';
 import { getItem } from '../data/items';
 import { defined } from './array';
 import { Set } from 'svelte/reactivity';
+import { canHeal } from './item';
 
 export async function createNewCharacter(baseChar: GameDef['baseChar']): Promise<Character> {
 	const newHero = new Character();
@@ -45,6 +46,14 @@ export class Character {
 		)
 	);
 	flags = new Set<string>();
+
+	#takeDamage(amt: number) {
+		this.hp = Math.max(0, this.hp - amt);
+	}
+
+	#heal(amt: number) {
+		this.hp = Math.min(this.maxHp, this.hp + amt);
+	}
 
 	inflictDamage(formula: string, ctx: Record<string, number>) {
 		// TODO: figure this out
@@ -154,5 +163,16 @@ export class Character {
 			item = item.id;
 		}
 		return this.equipped.find((eq) => eq.id === item);
+	}
+
+	useItem(item: Item | undefined) {
+		if (!item || this.getInventoryCount(item) === 0 || !canHeal(item)) return false;
+		const heal = item.effects.find((x) => x.type === 'healing')!;
+		const amt = evaluateDiceRoll(heal.amount);
+		this.#heal(amt);
+		if (item.type === 'consumable') {
+			this.removeFromInventory(item);
+		}
+		return true;
 	}
 }

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { ENTER, createMachine } from '$lib/util/fsm.svelte';
 	import { Messanger } from '$lib/util/messanger.svelte';
-	import type { Action, Item, NpcInstance, ShopItemInstance } from '$lib/types';
+	import type { Action, Item, Location, NpcInstance, ShopItemInstance } from '$lib/types';
 	import NavigateMenu from './NavigateMenu.svelte';
 	import BattleMenu from './BattleMenu.svelte';
 	import { hasHp } from '$lib/util/validate';
-	import { invokeAction } from '$lib/util/actions';
+	import { resolveActions } from '$lib/util/actions';
 	import type { GameState } from '$lib/util/game.svelte';
 	import ShopMenu from './ShopMenu.svelte';
 	import { npcLabel } from '$lib/util/npc';
@@ -26,19 +26,46 @@
 	let currentActions: Action[] | undefined = $state();
 	const actions = $derived(currentActions ?? gamestate.location.current.actions);
 
+	async function nav(loc: string | Location): Promise<void> {
+		console.log(`Exit location ${gamestate.location.current.name}`);
+		if (gamestate.location.current.exit) {
+			console.log(`Location has exit actions`);
+			await game.act(gamestate.location.current.exit);
+		}
+		await gamestate.location.moveTo(loc);
+		console.log(`Enter location ${gamestate.location.current.name}`);
+		if (gamestate.location.current.enter) {
+			console.log(`Location has enter actions`);
+			await game.act(gamestate.location.current.enter);
+		}
+	}
+
+	// This function assumes you won't be setting a new NPC
+	// while one is currently set.
+	async function setNpc(next: NpcInstance | undefined) {
+		if (next === undefined && npc && npc.exit) {
+			await game.act(npc.exit);
+		}
+		npc = next;
+		if (next && next.enter) {
+			await game.act(next.enter);
+		}
+	}
+
 	const game = createMachine('exploring', {
 		exploring: {
 			[ENTER]() {
 				msg.clear();
-				npc = undefined;
+				setNpc(undefined);
 			},
-			act: async (action: Action) => {
+			act: async (action: Action | Action[]) => {
 				msg.clear();
-				const enc = await invokeAction(action.action, gamestate, action.arg);
-				console.log(`act handler, for action (${action.action})`, enc);
+				const list = Array.isArray(action) ? action : [action];
+				const enc = await resolveActions(list, gamestate);
+				console.log(`Actions resolved`, enc);
 				currentActions = enc.actions;
 				if (enc.location) {
-					gamestate.location.moveTo(enc.location);
+					nav(enc.location);
 				}
 				if (enc.msg) {
 					msg.set(enc.msg);
@@ -48,7 +75,7 @@
 					game.goShopping();
 				}
 				if (enc.npc && enc.flow === 'fight') {
-					npc = enc.npc;
+					setNpc(enc.npc);
 					game.startFight();
 				}
 			},

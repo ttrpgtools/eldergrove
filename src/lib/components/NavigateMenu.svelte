@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Action } from '$lib/types';
-	import { checkCondition } from '$lib/util/conditions';
+	import { isActionValid } from '$lib/util/actions';
 	import type { GameState } from '$lib/util/game.svelte';
 
 	let {
@@ -13,13 +13,7 @@
 		gamestate: GameState;
 	} = $props();
 
-	function shouldShow(action: Action) {
-		if (action.show == null) return true;
-		const show =
-			typeof action.show === 'string' ? { condition: action.show, arg: undefined } : action.show;
-		return checkCondition(show.condition, gamestate, show.arg);
-	}
-	const available = $derived(actions.filter(shouldShow));
+	const available = $derived(actions.filter((act) => isActionValid(act, gamestate)));
 </script>
 
 {#each available as option}

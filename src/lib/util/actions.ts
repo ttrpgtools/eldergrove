@@ -1,8 +1,9 @@
 import { ActionName } from '$lib/const';
 import { getItem } from '$lib/data/items';
 import { getNpcInstance } from '$lib/data/npcs';
-import type { ActionType, Encounter, RandomTable } from '$lib/types';
+import type { ActionType, Action, Encounter, RandomTable } from '$lib/types';
 import { resolveList } from './async';
+import { checkCondition } from './conditions';
 import { rollFormula } from './dice';
 import type { GameState } from './game.svelte';
 
@@ -33,6 +34,13 @@ async function makeFightEncounter(id: string): Promise<Encounter> {
 		npc: await getNpcInstance(id),
 		flow: 'fight'
 	};
+}
+
+export function isActionValid(action: Action, gamestate: GameState) {
+	if (action.show == null) return true;
+	const show =
+		typeof action.show === 'string' ? { condition: action.show, arg: undefined } : action.show;
+	return checkCondition(show.condition, gamestate, show.arg);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,10 +77,43 @@ const actions: Record<ActionType, ActionFn> = {
 	},
 	async clear() {
 		return {};
+	},
+	async setFlag(_: GameState, flag: string) {
+		return {
+			flag: `+${flag}`
+		};
+	},
+	async clearFlag(_: GameState, flag: string) {
+		return {
+			flag: `-${flag}`
+		};
+	},
+	async chat(_: GameState, msg: string) {
+		return {
+			msg
+		};
+	},
+	async yesno(_: GameState, opts: { yes: string; no: string; flag: string }) {
+		return {
+			actions: [
+				{ action: 'setFlag', arg: opts.flag, label: 'Yes' },
+				{ action: 'chat', arg: 'Curses!', label: 'No' }
+			]
+		};
 	}
 };
 
-export async function invokeAction(action: ActionType, state: GameState, arg?: unknown) {
-	if (!(action in actions)) throw `Unknown action ${action}`;
-	return await actions[action](state, arg);
+export async function resolveActions(list: Action[], state: GameState) {
+	let encounter: Encounter = {};
+	for await (const act of list) {
+		if (!(act.action in actions)) throw `Unknown action ${act.action}`;
+		if (isActionValid(act, state)) {
+			const enc = await actions[act.action](state, act.arg);
+			encounter = { ...encounter, ...enc };
+			if (encounter.final) {
+				break;
+			}
+		}
+	}
+	return encounter;
 }

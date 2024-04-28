@@ -13,7 +13,7 @@ const games: GameDef[] = [
 			wil: 3,
 			exp: 0,
 			level: 1,
-			inventory: [],
+			inventory: [['yearlings/cure-potion', 5]],
 			equip: [['yearlings/rapier', 'right']]
 		},
 		desc: `

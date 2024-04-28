@@ -45,6 +45,8 @@ export type Effect = Attack | Healing;
 interface BaseItem extends Entity {
 	unique?: boolean;
 	effects?: Effect[];
+	enter?: Action[];
+	exit?: Action[];
 }
 export interface Weapon extends BaseItem {
 	type: 'weapon';
@@ -140,6 +142,8 @@ export interface Encounter {
 	shop?: ShopItemInstance[];
 	actions?: Action[];
 	location?: string | Location;
+	flag?: string;
+	final?: boolean;
 }
 
 export interface GameDef extends Entity {

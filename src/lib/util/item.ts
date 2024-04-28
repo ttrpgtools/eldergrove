@@ -12,7 +12,12 @@ const UNARMED: Attack = {
 	nature: 'physical'
 };
 
-type HasEffects = { effects?: Effect[] };
-export function getAttack(item: HasEffects | undefined, def: Attack = UNARMED) {
+type MayHaveEffects = { effects?: Effect[] };
+type HasEffects = { effects: Effect[] };
+export function getAttack(item: MayHaveEffects | undefined, def: Attack = UNARMED) {
 	return item?.effects ? item.effects.find((x) => x.type === 'attack') ?? def : def;
+}
+
+export function canHeal(item: MayHaveEffects): item is HasEffects {
+	return item.effects ? item.effects.some((x) => x.type === 'healing') : false;
 }
