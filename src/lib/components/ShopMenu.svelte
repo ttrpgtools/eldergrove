@@ -1,8 +1,8 @@
-<script lang="ts" generics="TMachine">
-	import type { Item, Scene, ShopItemInstance } from '$lib/types';
-	import type { Character } from '$lib/util/character.svelte';
-	import { ENTER, EXIT, createMachine } from '$lib/util/fsm.svelte';
-	import type { Messanger } from '$lib/util/messanger.svelte';
+<script lang="ts">
+	import type { Choice, Item, Scene, ShopItemInstance } from '$lib/types';
+	import type { Character } from '$state/character.svelte';
+	import { EXIT, createMachine } from '$util/fsm.svelte';
+	import type { Messanger } from '$state/messanger.svelte';
 
 	let {
 		purse,
@@ -13,7 +13,7 @@
 		onviewitem
 	}: {
 		purse: Scene;
-		shop: ShopItemInstance[];
+		shop: Choice[];
 		character: Character;
 		message: Messanger;
 		ondone: VoidFunction;
@@ -54,9 +54,12 @@
 </script>
 
 {#if shopping.state === 'buying'}
-	{#each shop as item}
-		<button type="button" class="nes-btn" onclick={() => shopping.inspect(item)}
-			>{item.item.name} ({item.cost})</button
+	{#each shop as { label, actions: [first] }}
+		<button
+			type="button"
+			class="nes-btn"
+			onclick={() => shopping.inspect(first.arg as ShopItemInstance)}
+			>{label} ({(first.arg as ShopItemInstance).cost})</button
 		>
 	{/each}
 	<button type="button" class="nes-btn" onclick={shopping.noThanks}>No Thanks</button>

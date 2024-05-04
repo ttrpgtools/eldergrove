@@ -1,6 +1,6 @@
 import { getLocation } from '$lib/data/locations';
 import type { Entity, Location } from '$lib/types';
-import { getBiome } from '../data/biomes';
+import { getBiome } from '$data/biomes';
 
 async function getTopLocationNames(s: Location): Promise<string[]> {
 	const names: string[] = [s.name];
@@ -40,6 +40,7 @@ class LocationManagerImpl {
 		const biome = await getBiome(location.biome);
 		const names = await getTopLocationNames(location);
 		this.#setLocation(location, names, biome);
+		return location;
 	}
 
 	nameAlreadyShown(name: string) {

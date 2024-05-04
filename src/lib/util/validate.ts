@@ -19,3 +19,7 @@ export function isVowel(char: string) {
 export function hasHp(entity: Entity): entity is HasHealth & Identifiable & Named {
 	return 'maxHp' in entity && 'hp' in entity;
 }
+
+export function isAsyncGenerator(fn: unknown) {
+	return Object.prototype.toString.call(fn) === '[object AsyncGenerator]';
+}

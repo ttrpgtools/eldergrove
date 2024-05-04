@@ -1,7 +1,7 @@
-import { getGame } from '$lib/data/games';
+import { getGame } from '$data/games';
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
-import { getGameState } from '$lib/util/game.svelte';
+import { getGameState } from '$state/game.svelte';
 
 export const load: PageLoad = async function ({ params }) {
 	const game = await getGame(params.gameid);

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Gear } from '$lib/types';
-	import type { Character } from '$lib/util/character.svelte';
+	import type { Character } from '$state/character.svelte';
 	import Icon from '$ui/Icon.svelte';
 
 	let {

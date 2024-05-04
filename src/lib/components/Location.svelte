@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { LocationManager } from '$lib/util/location.svelte';
+	import type { LocationManager } from '$state/location.svelte';
 
 	let {
 		location

@@ -1,4 +1,5 @@
-import type { ActionName } from './const';
+import type { Action } from './actions';
+import type { Conditional } from './conditions';
 
 export type Identifiable = { id: string };
 export type Named = { name: string };
@@ -9,17 +10,13 @@ export interface Entity extends Identifiable, Named {
 	icon?: string;
 }
 
-export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
-
-type Conditional = string | { condition: string; arg: unknown };
-
-export type ActionType = (typeof ActionName)[keyof typeof ActionName];
-export interface Action {
-	action: ActionType;
-	label?: string;
+export interface Choice {
+	label: string;
 	show?: Conditional;
-	arg?: unknown;
+	actions: Action[];
 }
+
+export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
 
 //type ItemType = 'weapon' | 'armor' | 'trinket' | 'consumable';
 
@@ -120,7 +117,7 @@ export interface NpcInstance extends NpcTemplate {
 
 export interface Location extends AdvancedEntity {
 	biome: string;
-	actions: Action[];
+	choices?: Choice[];
 	parent?: string;
 	encounters?: RandomTable<string> | string[];
 	shop?: ShopItem[];
@@ -144,6 +141,10 @@ export interface Encounter {
 	location?: string | Location;
 	flag?: string;
 	final?: boolean;
+}
+
+export interface ActionContext {
+	locations: Set<string>;
 }
 
 export interface GameDef extends Entity {

@@ -1,5 +1,5 @@
 import type { Attack, NpcInstance } from '$lib/types';
-import type { Character } from './character.svelte';
+import type { Character } from '$state/character.svelte';
 import { evaluateDiceRoll } from './dice';
 import { getAttack } from './item';
 import { isCharUpperCase, isVowel } from './validate';

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Character } from '$lib/util/character.svelte';
-	import { evaluateDiceRoll } from '$lib/util/dice';
+	import type { Character } from '$state/character.svelte';
+	import { evaluateDiceRoll } from '$util/dice';
 	import Icon from '$ui/Icon.svelte';
 	import GearSlot from './GearSlot.svelte';
 	import Inventory from './Inventory.svelte';

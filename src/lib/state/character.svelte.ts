@@ -1,9 +1,9 @@
 import type { GameDef, Gear, InventoryItem, Item } from '$lib/types';
-import { evaluateDiceRoll, rollFormula } from './dice';
-import { getItem } from '../data/items';
-import { defined } from './array';
+import { evaluateDiceRoll, rollFormula } from '$util/dice';
+import { getItem } from '$data/items';
+import { defined } from '$util/array';
 import { Set } from 'svelte/reactivity';
-import { canHeal } from './item';
+import { canHeal } from '$util/item';
 
 export async function createNewCharacter(baseChar: GameDef['baseChar']): Promise<Character> {
 	const newHero = new Character();

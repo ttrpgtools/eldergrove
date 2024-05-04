@@ -1,7 +1,9 @@
-import { ActionName } from '$lib/const';
-import type { Action, Location } from '$lib/types';
+import type { Choice, Location } from '$lib/types';
 
-const BACK: (l?: string) => Action = (label = 'Leave') => ({ action: ActionName.GoBack, label });
+const BACK: (l?: string) => Choice = (label = 'Leave') => ({
+	actions: [{ action: 'locationReturn' }],
+	label
+});
 
 const locations: Location[] = [
 	{
@@ -9,9 +11,9 @@ const locations: Location[] = [
 		name: 'New Beginnings...',
 		biome: 'beach',
 		image: '/img/location/opening.webp',
-		actions: [
-			{ action: 'navigate', arg: 'starting-beach', label: 'Walk Down Beach' },
-			{ action: 'navigate', arg: 'unknown-woods', label: 'Enter Woods' }
+		choices: [
+			{ actions: [{ action: 'locationChange', arg: 'starting-beach' }], label: 'Walk Down Beach' },
+			{ actions: [{ action: 'locationChange', arg: 'unknown-woods' }], label: 'Enter Woods' }
 		],
 		desc: `
     You wake up on a beach. Your head hurts. You don't recall who you
@@ -27,9 +29,9 @@ const locations: Location[] = [
 		biome: 'beach',
 		image: '/img/location/starting-beach.webp',
 		encounters: ['crab', 'sandpiper'],
-		actions: [
-			{ action: 'randomEncounter', label: 'Explore' },
-			{ action: 'navigate', arg: 'pylaim', label: 'Into Town' }
+		choices: [
+			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Into Town' }
 		],
 		desc: `
     The sand is firm beneath your feet and the water is warm.
@@ -41,14 +43,13 @@ const locations: Location[] = [
 		name: 'Pylaim',
 		biome: 'town',
 		image: '/img/location/pylaim.webp',
-		actions: [
-			{ action: 'navigate', arg: 'gentle-field', label: 'Leave Town' },
-			{ action: 'navigate', arg: 'pylaim/weapon', label: 'Weapons' },
-			{ action: 'navigate', arg: 'pylaim/armor', label: 'Armor' },
-			{ action: 'navigate', arg: 'pylaim/general', label: 'General' },
+		choices: [
+			{ actions: [{ action: 'locationChange', arg: 'gentle-field' }], label: 'Leave Town' },
+			{ actions: [{ action: 'locationChange', arg: 'pylaim/weapon' }], label: 'Weapons' },
+			{ actions: [{ action: 'locationChange', arg: 'pylaim/armor' }], label: 'Armor' },
+			{ actions: [{ action: 'locationChange', arg: 'pylaim/general' }], label: 'General' },
 			{
-				action: 'navigate',
-				arg: 'pylaim/teller',
+				actions: [{ action: 'locationChange', arg: 'pylaim/teller' }],
 				label: 'Mystic',
 				show: { condition: `xpMoreThan`, arg: 0 }
 			}
@@ -65,9 +66,9 @@ const locations: Location[] = [
 		biome: 'meadow',
 		image: '/img/location/good-field.webp',
 		encounters: ['rat', 'scorpion'],
-		actions: [
-			{ action: 'randomEncounter', label: 'Explore' },
-			{ action: 'navigate', arg: 'pylaim', label: 'Town' }
+		choices: [
+			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Town' }
 		],
 		desc: `
 			A combination of farms, fields and grasslands,
@@ -83,8 +84,11 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/weapon-shop.webp',
 		parent: 'pylaim',
-		actions: [
-			{ action: 'shop', label: 'Browse Goods', arg: `There isn't much but it's well made.` },
+		choices: [
+			{
+				label: 'Browse Goods',
+				actions: [{ action: 'shopStart', arg: `There isn't much but it's well made.` }]
+			},
 			BACK('Leave Shop')
 		],
 		shop: [{ item: 'iron-dagger', stock: 5, cost: 10, willBuy: true }],
@@ -97,8 +101,11 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/armor-shop.webp',
 		parent: 'pylaim',
-		actions: [
-			{ action: 'shop', label: 'Browse Goods', arg: `Behold the finest armor around!` },
+		choices: [
+			{
+				label: 'Browse Goods',
+				actions: [{ action: 'shopStart', arg: `Behold the finest armor around!` }]
+			},
 			BACK('Leave Shop')
 		],
 		shop: [{ item: 'wooden-shield', stock: 5, cost: 5, willBuy: true }],
@@ -110,7 +117,7 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/general-store.webp',
 		parent: 'pylaim',
-		actions: [BACK()],
+		choices: [BACK()],
 		desc: `What will you have?`
 	},
 	{
@@ -119,7 +126,7 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/fortune-teller.webp',
 		parent: 'pylaim',
-		actions: [BACK()],
+		choices: [BACK()],
 		desc: `A mysterious woman in a mysterious tent. I'm sure this will be fine.`
 	},
 	{
@@ -139,16 +146,18 @@ const locations: Location[] = [
 			'yearlings/xas',
 			'yearlings/geist'
 		],
-		actions: [
-			{ action: 'randomEncounter', label: 'Explore' },
-			{ action: 'navigate', label: 'To Rocky Area', arg: 'yearlings/rocky-area' },
+		choices: [
+			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
 			{
-				action: 'navigate',
-				label: 'To Forest',
-				arg: 'yearlings/doomed-woods',
-				show: { condition: `atLeastLevel`, arg: 13 }
+				actions: [{ action: 'locationChange', arg: 'yearlings/rocky-area' }],
+				label: 'To Rocky Area'
 			},
-			{ action: 'navigate', label: 'Into Town', arg: 'yearlings/pylaim' }
+			{
+				actions: [{ action: 'locationChange', arg: 'yearlings/doomed-woods' }],
+				label: 'To Forest',
+				show: { condition: `levelAtLeast`, arg: 13 }
+			},
+			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
 		],
 		desc: `You are in the field. The town, forest, and rocky area border the field.`
 	},
@@ -169,10 +178,13 @@ const locations: Location[] = [
 			'yearlings/cave-monkey',
 			'yearlings/paramanthis'
 		],
-		actions: [
-			{ action: 'randomEncounter', label: 'Explore' },
-			{ action: 'navigate', label: 'To The Field', arg: 'yearlings/grassy-field' },
-			{ action: 'navigate', label: 'Into Town', arg: 'yearlings/pylaim' }
+		choices: [
+			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{
+				actions: [{ action: 'locationChange', arg: 'yearlings/grassy-field' }],
+				label: 'To The Field'
+			},
+			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
 		],
 		desc: `
     A large barren scrubland, this area has a rough edge to it. Be careful to mind
@@ -184,14 +196,19 @@ const locations: Location[] = [
 		name: 'Pylaim',
 		biome: 'town',
 		image: '/img/location/pylaim.webp',
-		actions: [
-			{ action: 'navigate', arg: 'yearlings/grassy-field', label: 'Leave Town' },
-			{ action: 'navigate', arg: 'yearlings/pylaim/weapon', label: 'Weapons' },
-			{ action: 'navigate', arg: 'yearlings/pylaim/armor', label: 'Armor' },
-			{ action: 'navigate', arg: 'yearlings/pylaim/general', label: 'General' },
+		choices: [
 			{
-				action: 'navigate',
-				arg: 'yearlings/pylaim/teller',
+				actions: [{ action: 'locationChange', arg: 'yearlings/grassy-field' }],
+				label: 'Leave Town'
+			},
+			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/weapon' }], label: 'Weapons' },
+			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/armor' }], label: 'Armor' },
+			{
+				actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/general' }],
+				label: 'General'
+			},
+			{
+				actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/teller' }],
 				label: 'Fortune Teller'
 			}
 		],
@@ -206,8 +223,13 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/weapon-shop.webp',
 		parent: 'yearlings/pylaim',
-		actions: [
-			{ action: 'shop', label: 'Browse Goods', arg: `There isn't much but it's well made.` },
+		choices: [
+			{
+				actions: [
+					{ action: 'shopStart', arg: `You are in luck, we have a range of swords in stock.` }
+				],
+				label: 'Browse Goods'
+			},
 			BACK('Leave Shop')
 		],
 		shop: [
@@ -218,7 +240,7 @@ const locations: Location[] = [
 			{ item: 'yearlings/masemune', stock: 5, cost: 1150, willBuy: true }
 		],
 		coins: 35,
-		desc: `Weapons and a beautiful woman behind the counter.`
+		desc: `You stroll into the weapon shop to see what is for sale.`
 	},
 	{
 		id: 'yearlings/pylaim/armor',
@@ -226,8 +248,11 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/armor-shop.webp',
 		parent: 'yearlings/pylaim',
-		actions: [
-			{ action: 'shop', label: 'Browse Goods', arg: `Behold the finest armor around!` },
+		choices: [
+			{
+				actions: [{ action: 'shopStart', arg: `Behold the finest armor around!` }],
+				label: 'Browse Goods'
+			},
 			BACK('Leave Shop')
 		],
 		shop: [
@@ -245,8 +270,11 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/general-store.webp',
 		parent: 'yearlings/pylaim',
-		actions: [
-			{ action: 'shop', label: 'Browse Goods', arg: `Nothing but the finest quality items!` },
+		choices: [
+			{
+				actions: [{ action: 'shopStart', arg: `Nothing but the finest quality items!` }],
+				label: 'Browse Goods'
+			},
 			BACK('Leave Store')
 		],
 		shop: [
@@ -261,8 +289,8 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/fortune-teller.webp',
 		parent: 'yearlings/pylaim',
-		enter: [{ action: 'chat', arg: `Hello dearie!` }],
-		actions: [BACK()],
+		enter: [{ action: 'messageSet', arg: `Hello dearie!` }],
+		choices: [BACK()],
 		desc: `A mysterious woman in a mysterious tent. I'm sure this will be fine.`
 	},
 	{
@@ -271,9 +299,12 @@ const locations: Location[] = [
 		biome: 'forest',
 		image: '/img/location/doomed-woods.webp',
 		encounters: ['yearlings/kamul'],
-		actions: [
-			{ action: 'randomEncounter', label: 'Explore' },
-			{ action: 'navigate', label: 'Leave the Woods', arg: 'yearlings/grassy-field' }
+		choices: [
+			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{
+				actions: [{ action: 'locationChange', arg: 'yearlings/grassy-field' }],
+				label: 'Leave the Woods'
+			}
 		],
 		desc: `
     The dread aura that kept you out of the woods thus far has subsided somewhat,

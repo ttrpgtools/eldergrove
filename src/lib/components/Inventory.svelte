@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Item } from '$lib/types';
-	import type { Character } from '$lib/util/character.svelte';
-	import { canHeal } from '$lib/util/item';
+	import type { Character } from '$state/character.svelte';
+	import { canHeal } from '$util/item';
 	import Button from '$ui/button/button.svelte';
 	import * as Dialog from '$ui/dialog';
 	let { character, open = $bindable() }: { character: Character; open: boolean } = $props();

@@ -1,11 +1,11 @@
 <script lang="ts" generics="TMachine">
-	import { rollFormula } from '$lib/util/dice';
+	import { rollFormula } from '$util/dice';
 
 	import type { NpcInstance } from '$lib/types';
-	import type { Character } from '$lib/util/character.svelte';
-	import { attackNpc, getNextNpcAttack, npcLabel } from '$lib/util/npc';
-	import { ENTER, createMachine } from '$lib/util/fsm.svelte';
-	import type { Messanger } from '$lib/util/messanger.svelte';
+	import type { Character } from '$state/character.svelte';
+	import { attackNpc, getNextNpcAttack, npcLabel } from '$util/npc';
+	import { ENTER, createMachine } from '$util/fsm.svelte';
+	import type { Messanger } from '$state/messanger.svelte';
 
 	let {
 		npc,
