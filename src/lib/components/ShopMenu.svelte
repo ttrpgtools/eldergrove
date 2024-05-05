@@ -3,29 +3,30 @@
 	import type { Character } from '$state/character.svelte';
 	import { EXIT, createMachine } from '$util/fsm.svelte';
 	import type { Messanger } from '$state/messanger.svelte';
+	import type { Stack } from '$state/stack.svelte';
 
 	let {
 		purse,
 		shop,
 		character,
 		message,
-		ondone,
-		onviewitem
+		item,
+		ondone
 	}: {
 		purse: Scene;
 		shop: Choice[];
 		character: Character;
 		message: Messanger;
+		item: Stack<Item>;
 		ondone: VoidFunction;
-		onviewitem: (item: Item | undefined) => void;
 	} = $props();
 	let current: ShopItemInstance | undefined = $state();
 	const shopping = createMachine('buying', {
 		buying: {
-			inspect(item: ShopItemInstance) {
-				onviewitem(item.item);
-				current = item;
-				message.set(`It costs ${item.cost} coin, interested?`);
+			inspect(shopitem: ShopItemInstance) {
+				item.set(shopitem.item);
+				current = shopitem;
+				message.set(`It costs ${shopitem.cost} coin, interested?`);
 				return 'inspecting';
 			},
 			noThanks: ondone
@@ -47,7 +48,7 @@
 			},
 			[EXIT]() {
 				current = undefined;
-				onviewitem(undefined);
+				item.clear();
 			}
 		}
 	});

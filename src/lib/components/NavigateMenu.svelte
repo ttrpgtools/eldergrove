@@ -12,7 +12,9 @@
 	} = $props();
 
 	const available = $derived(
-		gamestate.choices.filter((choice) => !choice.show || checkCondition(choice.show, gamestate))
+		gamestate.choices
+			.currentOrDefault([])
+			.filter((choice) => !choice.show || checkCondition(choice.show, gamestate))
 	);
 </script>
 

@@ -5,7 +5,7 @@ import { rollOnTable } from '$util/table';
 
 function noEncounter(state: GameState) {
 	state.message.set(`There doesn't appear to be much going on here.`);
-	state.choices = [{ label: `OK`, actions: [{ action: 'messageClear' }] }];
+	state.choices.set([{ label: `OK`, actions: [{ action: 'messageClear' }] }]);
 }
 
 async function* setNpc(npc: string | NpcInstance, state: GameState) {

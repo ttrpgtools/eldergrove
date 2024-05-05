@@ -15,7 +15,7 @@ async function* setLocation(location: string | Location, state: GameState, ctx: 
 	const dest = await state.location.moveTo(location);
 	ctx.locations.add(dest.id);
 	if (state.location.current.choices && state.location.current.choices.length) {
-		state.choices = state.location.current.choices;
+		state.choices.set(state.location.current.choices);
 	}
 	// yield to Enter actions
 	if (state.location.current.enter) {

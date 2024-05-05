@@ -14,15 +14,16 @@
 		gamestate: GameState;
 	} = $props();
 
-	let item: Item | undefined = $state();
-	const entity = $derived(item ?? gamestate.npc.current ?? gamestate.location.current);
-
-	let shop: ShopItemInstance[] = $state([]);
+	const entity = $derived(
+		gamestate.item.current ?? gamestate.npc.current ?? gamestate.location.current
+	);
 
 	async function onact(choice: Choice) {
+		gamestate.message.clear();
 		await resolveActions(choice.actions, gamestate);
 	}
 	async function ondone(action: 'shopFinish' | 'encounterFinish') {
+		gamestate.message.clear();
 		await resolveActions([{ action }], gamestate);
 	}
 </script>
@@ -62,10 +63,10 @@
 		<ShopMenu
 			character={gamestate.character}
 			purse={gamestate.location.current}
-			shop={gamestate.choices}
+			shop={gamestate.choices.currentOrDefault([])}
 			message={gamestate.message}
+			item={gamestate.item}
 			ondone={() => ondone('shopFinish')}
-			onviewitem={(sel: Item | undefined) => item = sel}
 		/>
 	{/if}
 </div>
