@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { Choice, Item, ShopItemInstance } from '$lib/types';
+	import type { Choice } from '$lib/types';
 	import NavigateMenu from './NavigateMenu.svelte';
 	import BattleMenu from './BattleMenu.svelte';
 	import { hasHp } from '$util/validate';
-	import { resolveActions } from '$lib/actions';
 	import type { GameState } from '$state/game.svelte';
 	import ShopMenu from './ShopMenu.svelte';
 	import { npcLabel } from '$util/npc';
@@ -20,11 +19,11 @@
 
 	async function onact(choice: Choice) {
 		gamestate.message.clear();
-		await resolveActions(choice.actions, gamestate);
+		await gamestate.resolveActions(choice.actions);
 	}
 	async function ondone(action: 'shopFinish' | 'encounterFinish') {
 		gamestate.message.clear();
-		await resolveActions([{ action }], gamestate);
+		await gamestate.resolveActions([{ action }]);
 	}
 </script>
 
