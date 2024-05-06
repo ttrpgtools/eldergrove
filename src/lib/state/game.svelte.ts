@@ -24,14 +24,10 @@ class GameStateImpl {
 	item = new Stack<Item>();
 	mode = createMachine('exploring', {
 		exploring: {
-			fight: 'fighting',
-			shop: 'shopping'
+			fight: 'fighting'
 		},
 		fighting: {
 			win: 'exploring'
-		},
-		shopping: {
-			doneShopping: 'exploring'
 		}
 	});
 
@@ -46,10 +42,9 @@ class GameStateImpl {
 		const ctx = makeContext();
 		const linked = new DynamicIterable(list);
 		for await (const act of linked) {
-			console.log(`action:`, act);
 			if (!(act.action in actions)) throw `Unknown action ${act.action}`;
 			if (isActionValid(act, this)) {
-				console.log(`starting processing of action`);
+				console.log(`starting processing of action`, act);
 				const res = await actions[act.action](this, act.arg as never, ctx);
 				console.log(`results are in`, res, res?.toString());
 				if (res && isAsyncGenerator(res)) {

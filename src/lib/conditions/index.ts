@@ -1,4 +1,5 @@
 import type { GameState } from '$state/game.svelte';
+import { coinsAtLeast, coinsLessThan } from './coins';
 import { xpMoreThan } from './exp';
 import { flagIsSet, flagIsNotSet } from './flags';
 import { levelAtLeast } from './level';
@@ -7,6 +8,8 @@ const conditions = {
 	flagIsSet,
 	flagIsNotSet,
 	xpMoreThan,
+	coinsAtLeast,
+	coinsLessThan,
 	levelAtLeast
 } as const;
 
@@ -18,5 +21,5 @@ export interface Conditional {
 export function checkCondition(when: Conditional, state: GameState) {
 	if (!(when.condition in conditions)) throw `Unknown condition ${when.condition}`;
 	const fn = conditions[when.condition];
-	fn(state, when.arg as never); // ugh.
+	return fn(state, when.arg as never); // ugh.
 }

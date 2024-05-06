@@ -4,7 +4,6 @@
 	import BattleMenu from './BattleMenu.svelte';
 	import { hasHp } from '$util/validate';
 	import type { GameState } from '$state/game.svelte';
-	import ShopMenu from './ShopMenu.svelte';
 	import { npcLabel } from '$util/npc';
 
 	let {
@@ -58,14 +57,5 @@
 		/>
 	{:else if gamestate.mode.state === 'exploring'}
 		<NavigateMenu {gamestate} {onact} />
-	{:else if gamestate.mode.state === 'shopping'}
-		<ShopMenu
-			character={gamestate.character}
-			purse={gamestate.location.current}
-			shop={gamestate.choices.currentOrDefault([])}
-			message={gamestate.message}
-			item={gamestate.item}
-			ondone={() => ondone('shopFinish')}
-		/>
 	{/if}
 </div>
