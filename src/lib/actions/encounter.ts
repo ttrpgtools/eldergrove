@@ -2,6 +2,7 @@ import { getNpcInstance } from '$data/npcs';
 import type { NpcInstance, RandomTable } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { rollOnTable } from '$util/table';
+import type { Action } from '.';
 
 function noEncounter(state: GameState) {
 	state.message.set(`There doesn't appear to be much going on here.`);
@@ -34,9 +35,16 @@ export async function encounterRandomNpc(
 	return setNpc(results[0], state);
 }
 
-export async function encounterFinish(state: GameState) {
+export async function encounterFinish(state: GameState, result: string) {
 	return (async function* () {
 		if (state.npc.current) {
+			// TODO: Is this generic or provided per location via actions?
+			const streakKey = `${state.location.current.id}:wins`;
+			const streakAction: Action = {
+				action: result === 'win' ? `counterInc` : `counterReset`,
+				arg: streakKey
+			};
+			yield [streakAction];
 			if (state.npc.current.exit) {
 				yield state.npc.current.exit;
 			}

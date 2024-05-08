@@ -16,7 +16,7 @@
 		npc: NpcInstance;
 		character: Character;
 		message: Messanger;
-		ondone: VoidFunction;
+		ondone: (result: string) => void;
 	} = $props();
 	const battle = createMachine('yourTurn', {
 		yourTurn: {
@@ -28,7 +28,7 @@
 				}
 				return 'itsTurn';
 			},
-			run: ondone
+			run: () => ondone('run')
 		},
 		itsTurn: {
 			[ENTER]() {
@@ -66,7 +66,7 @@
 					message.append(` You leveled up!`);
 				}
 			},
-			leave: ondone
+			leave: () => ondone('win')
 		},
 		youDied: {
 			// Nothing yet

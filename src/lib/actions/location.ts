@@ -5,6 +5,7 @@ async function* setLocation(location: string | Location, state: GameState, ctx: 
 	console.log(`setLocation`, location);
 	// yield to Exit actions
 	if (state.location.current.exit) {
+		console.log(`[setLoc] About to yield exit actions for ${location}`);
 		yield state.location.current.exit;
 	}
 	if (ctx.locations.has(typeof location === 'string' ? location : location.id)) {
@@ -12,6 +13,7 @@ async function* setLocation(location: string | Location, state: GameState, ctx: 
 		console.error(`Location loop detected attempting to head to ${location}`);
 		return;
 	}
+	console.log(`[setLoc] About to moveTo(${location})`);
 	const dest = await state.location.moveTo(location);
 	ctx.locations.add(dest.id);
 	if (state.location.current.choices && state.location.current.choices.length) {
@@ -19,6 +21,7 @@ async function* setLocation(location: string | Location, state: GameState, ctx: 
 	}
 	// yield to Enter actions
 	if (state.location.current.enter) {
+		console.log(`[setLoc] About to yield enter actions for ${location}`);
 		yield state.location.current.enter;
 	}
 }

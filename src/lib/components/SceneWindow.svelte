@@ -16,13 +16,15 @@
 		gamestate.item.current ?? gamestate.npc.current ?? gamestate.location.current
 	);
 
+	$inspect(gamestate.character.counters);
+
 	async function onact(choice: Choice) {
 		gamestate.message.clear();
 		await gamestate.resolveActions(choice.actions);
 	}
-	async function ondone(action: 'shopFinish' | 'encounterFinish') {
+	async function ondone(arg: string) {
 		gamestate.message.clear();
-		await gamestate.resolveActions([{ action }]);
+		await gamestate.resolveActions([{ action: `encounterFinish`, arg }]);
 	}
 </script>
 
@@ -52,7 +54,7 @@
 		<BattleMenu
 			character={gamestate.character}
 			npc={gamestate.npc.current}
-			ondone={() => ondone('encounterFinish')}
+			{ondone}
 			message={gamestate.message}
 		/>
 	{:else if gamestate.mode.state === 'exploring'}

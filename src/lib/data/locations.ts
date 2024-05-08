@@ -149,6 +149,7 @@ const locations: Location[] = [
 			},
 			{ action: 'flagSet', arg: 'field-visited' }
 		],
+		exit: [{ action: 'counterReset', arg: 'yearlings/grassy-field:wins' }],
 		choices: [
 			{
 				actions: [

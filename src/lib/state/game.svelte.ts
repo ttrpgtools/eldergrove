@@ -6,7 +6,6 @@ import { getLocationManager, type LocationManager } from './location.svelte';
 import { Messanger } from './messanger.svelte';
 import { getNpcManager, type NpcManager } from './npc.svelte';
 import { Stack } from './stack.svelte';
-import { DynamicIterable } from '$util/async';
 import { isAsyncGenerator } from '$util/validate';
 
 function makeContext(): ActionContext {
@@ -38,11 +37,10 @@ class GameStateImpl {
 		this.npc = npc;
 	}
 
-	async resolveActions(list: Action[]) {
+	async resolveActions(list: Action[], ctx?: ActionContext) {
 		console.log(`resolving Actions`, list);
-		const ctx = makeContext();
-		const linked = new DynamicIterable(list);
-		for await (const act of linked) {
+		ctx = ctx ?? makeContext();
+		for await (const act of list) {
 			if (!(act.action in actions)) throw `Unknown action ${act.action}`;
 			if (isActionValid(act, this, ctx)) {
 				console.log(`starting processing of action`, act);
@@ -51,7 +49,7 @@ class GameStateImpl {
 				if (res && isAsyncGenerator(res)) {
 					console.log(`looping over the inner generator`);
 					for await (const inner of res) {
-						linked.insertItems(inner);
+						await this.resolveActions(inner, ctx);
 					}
 				}
 			}
