@@ -28,9 +28,8 @@ const locations: Location[] = [
 		name: 'Quaint Beach',
 		biome: 'beach',
 		image: '/img/location/starting-beach.webp',
-		encounters: ['crab', 'sandpiper'],
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{ actions: [{ action: 'encounterRandomNpc', arg: ['crab', 'sandpiper'] }], label: 'Explore' },
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Into Town' }
 		],
 		desc: `
@@ -65,9 +64,8 @@ const locations: Location[] = [
 		name: 'Gentle Field',
 		biome: 'meadow',
 		image: '/img/location/good-field.webp',
-		encounters: ['rat', 'scorpion'],
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{ actions: [{ action: 'encounterRandomNpc', arg: ['rat', 'scorpion'] }], label: 'Explore' },
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Town' }
 		],
 		desc: `
@@ -134,20 +132,44 @@ const locations: Location[] = [
 		name: 'Grassy Field',
 		biome: 'meadow',
 		image: '/img/location/grassy-field.webp',
-		encounters: [
-			'yearlings/rat',
-			'yearlings/imp',
-			'yearlings/fox',
-			'yearlings/mongoose',
-			'yearlings/wolf',
-			'yearlings/warlock',
-			'yearlings/goblin',
-			'yearlings/bear',
-			'yearlings/xas',
-			'yearlings/geist'
+		enter: [
+			{
+				action: 'messageSet',
+				arg: `The mist settles and you find yourself in a grassy field.
+				There is a town nearby. The field is bordered on the West by a dense forest.
+				There seems to be a powerful negative aura given off by the forest.
+				You decide to stay out of the forest for the time being.
+				To the East is a barren rocky area. This is some strange terrain, you think to yourself.`,
+				valid: { condition: 'flagIsNotSet', arg: 'field-visited' }
+			},
+			{
+				action: 'messageSet',
+				arg: `You are in the field. The town, forest, and rocky area border the field.`,
+				valid: { condition: 'flagIsSet', arg: 'field-visited' }
+			},
+			{ action: 'flagSet', arg: 'field-visited' }
 		],
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{
+				actions: [
+					{
+						action: 'encounterRandomNpc',
+						arg: [
+							'yearlings/rat',
+							'yearlings/imp',
+							'yearlings/fox',
+							'yearlings/mongoose',
+							'yearlings/wolf',
+							'yearlings/warlock',
+							'yearlings/goblin',
+							'yearlings/bear',
+							'yearlings/xas',
+							'yearlings/geist'
+						]
+					}
+				],
+				label: 'Explore'
+			},
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/rocky-area' }],
 				label: 'To Rocky Area'
@@ -158,28 +180,34 @@ const locations: Location[] = [
 				show: { condition: `levelAtLeast`, arg: 13 }
 			},
 			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
-		],
-		desc: `You are in the field. The town, forest, and rocky area border the field.`
+		]
 	},
 	{
 		id: 'yearlings/rocky-area',
 		name: 'Rocky Area',
 		biome: 'rocky',
 		image: '/img/location/rocky-area.webp',
-		encounters: [
-			'yearlings/druid',
-			'yearlings/demon',
-			'yearlings/dactyl',
-			'yearlings/cyclops',
-			'yearlings/t-rex',
-			'yearlings/ogre',
-			'yearlings/troll',
-			'yearlings/sidewinder',
-			'yearlings/cave-monkey',
-			'yearlings/paramanthis'
-		],
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{
+				actions: [
+					{
+						action: 'encounterRandomNpc',
+						arg: [
+							'yearlings/druid',
+							'yearlings/demon',
+							'yearlings/dactyl',
+							'yearlings/cyclops',
+							'yearlings/t-rex',
+							'yearlings/ogre',
+							'yearlings/troll',
+							'yearlings/sidewinder',
+							'yearlings/cave-monkey',
+							'yearlings/paramanthis'
+						]
+					}
+				],
+				label: 'Explore'
+			},
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/grassy-field' }],
 				label: 'To The Field'
@@ -298,9 +326,8 @@ const locations: Location[] = [
 		name: 'Doomed Woods',
 		biome: 'forest',
 		image: '/img/location/doomed-woods.webp',
-		encounters: ['yearlings/kamul'],
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc' }], label: 'Explore' },
+			{ actions: [{ action: 'encounterRandomNpc', arg: ['yearlings/kamul'] }], label: 'Explore' },
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/grassy-field' }],
 				label: 'Leave the Woods'

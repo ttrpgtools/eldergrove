@@ -1,5 +1,5 @@
 import { getNpcInstance } from '$data/npcs';
-import type { NpcInstance } from '$lib/types';
+import type { NpcInstance, RandomTable } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { rollOnTable } from '$util/table';
 
@@ -22,12 +22,14 @@ async function* setNpc(npc: string | NpcInstance, state: GameState) {
 	state.mode.fight();
 }
 
-export async function encounterRandomNpc(state: GameState) {
-	const scene = state.location.current;
-	if (!scene.encounters) {
+export async function encounterRandomNpc(
+	state: GameState,
+	table: string[] | RandomTable<string> | undefined
+) {
+	if (!table) {
 		return noEncounter(state);
 	}
-	const results = rollOnTable(scene.encounters);
+	const results = rollOnTable(table);
 	if (results.length === 0) return noEncounter(state);
 	return setNpc(results[0], state);
 }

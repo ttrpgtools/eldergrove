@@ -24,20 +24,26 @@ export async function resolveList<
 
 export class DynamicIterable<T> implements AsyncIterable<T> {
 	private items: T[];
-	private currentIndex: number = 0;
+	private currentIndex = 0;
 
 	constructor(items: T[]) {
 		this.items = items;
+		console.log(`[DI] Creating DI with ${items.length} items`);
 	}
 
 	async *[Symbol.asyncIterator](): AsyncIterator<T> {
 		while (this.currentIndex < this.items.length) {
-			yield this.items[this.currentIndex];
+			console.log(`[DI] About to yield index ${this.currentIndex} of`, this.items);
 			this.currentIndex++;
+			yield this.items[this.currentIndex - 1];
 		}
 	}
 
 	public insertItems(newItems: T[]): void {
+		console.log(
+			`[DI] About to splice in ${newItems.length} items at index ${this.currentIndex} of`,
+			this.items
+		);
 		this.items.splice(this.currentIndex, 0, ...newItems);
 	}
 }

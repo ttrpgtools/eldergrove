@@ -119,7 +119,6 @@ export interface Location extends AdvancedEntity {
 	biome: string;
 	choices?: Choice[];
 	parent?: string;
-	encounters?: RandomTable<string> | string[];
 	shop?: ShopItem[];
 }
 
@@ -145,7 +144,14 @@ export interface Encounter {
 
 export interface ActionContext {
 	locations: Set<string>;
+	data: {
+		[x: `s${string}`]: string;
+		[y: `n${string}`]: number;
+		[z: `is${string}`]: boolean;
+	};
 }
+
+export type ActionContextDataKey = keyof ActionContext['data'];
 
 export interface GameDef extends Entity {
 	start: string;

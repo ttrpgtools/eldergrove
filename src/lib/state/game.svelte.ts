@@ -11,7 +11,8 @@ import { isAsyncGenerator } from '$util/validate';
 
 function makeContext(): ActionContext {
 	return {
-		locations: new Set()
+		locations: new Set(),
+		data: {}
 	};
 }
 
@@ -43,7 +44,7 @@ class GameStateImpl {
 		const linked = new DynamicIterable(list);
 		for await (const act of linked) {
 			if (!(act.action in actions)) throw `Unknown action ${act.action}`;
-			if (isActionValid(act, this)) {
+			if (isActionValid(act, this, ctx)) {
 				console.log(`starting processing of action`, act);
 				const res = await actions[act.action](this, act.arg as never, ctx);
 				console.log(`results are in`, res, res?.toString());

@@ -41,7 +41,7 @@
 		{:else if !gamestate.location.nameAlreadyShown(entity.name)}
 			<p class="mb-3 text-xl">{entity.name}</p>
 		{/if}
-		<p class="mb-6 text-gray-300">{entity.desc}</p>
+		{#if entity.desc}<p class="mb-6 text-gray-300">{entity.desc}</p>{/if}
 		{#if gamestate.message.text}
 			<p class="">{gamestate.message.text}</p>
 		{/if}

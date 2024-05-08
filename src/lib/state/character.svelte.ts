@@ -2,7 +2,7 @@ import type { GameDef, Gear, InventoryItem, Item } from '$lib/types';
 import { evaluateDiceRoll, rollFormula } from '$util/dice';
 import { getItem } from '$data/items';
 import { defined } from '$util/array';
-import { Set } from 'svelte/reactivity';
+import { Set, Map } from 'svelte/reactivity';
 import { canHeal } from '$util/item';
 
 export async function createNewCharacter(baseChar: GameDef['baseChar']): Promise<Character> {
@@ -46,6 +46,7 @@ export class Character {
 		)
 	);
 	flags = new Set<string>();
+	counters = new Map<string, number>();
 
 	#takeDamage(amt: number) {
 		this.hp = Math.max(0, this.hp - amt);
