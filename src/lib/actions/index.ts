@@ -1,7 +1,7 @@
 import { checkCondition, type Conditional } from '$lib/conditions';
 import { messageAppend, messageClear, messageSet } from './conversation';
 import { flagSet, flagUnset } from './flags';
-import { locationChange, locationReturn } from './location';
+import { locationChange, locationDesc, locationReturn } from './location';
 import type { GameState } from '$state/game.svelte';
 import { encounterFinish, encounterRandomNpc } from './encounter';
 import { shopStart, shopFinish } from './shop';
@@ -43,6 +43,7 @@ export const actions = {
 	attackFromNpc,
 	locationChange,
 	locationReturn,
+	locationDesc,
 	messageClear,
 	messageSet,
 	messageAppend,

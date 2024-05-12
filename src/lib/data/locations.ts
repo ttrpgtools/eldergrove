@@ -138,20 +138,16 @@ const locations: Location[] = [
 		name: 'Grassy Field',
 		biome: 'meadow',
 		image: '/img/location/grassy-field.webp',
+		desc: `You are in the field. The town, forest, and rocky area border the field.`,
 		enter: [
 			{
 				action: 'messageSet',
-				arg: `The mist settles and you find yourself in a grassy field.
+				arg: `!!The mist settles and you find yourself in a grassy field.
 				There is a town nearby. The field is bordered on the West by a dense forest.
 				There seems to be a powerful negative aura given off by the forest.
 				You decide to stay out of the forest for the time being.
 				To the East is a barren rocky area. This is some strange terrain, you think to yourself.`,
 				valid: { condition: 'flagIsNotSet', arg: 'field-visited' }
-			},
-			{
-				action: 'messageSet',
-				arg: `You are in the field. The town, forest, and rocky area border the field.`,
-				valid: { condition: 'flagIsSet', arg: 'field-visited' }
 			},
 			{ action: 'flagSet', arg: 'field-visited' }
 		],
@@ -175,10 +171,6 @@ const locations: Location[] = [
 								'yearlings/geist'
 							],
 							followBy: [
-								{
-									action: 'messageSet',
-									arg: `You are in the field. The town, forest, and rocky area border the field.`
-								},
 								{
 									valid: { condition: 'flagIsNotSet', arg: 'found-rope' },
 									action: 'branch',

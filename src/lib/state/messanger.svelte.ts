@@ -1,8 +1,10 @@
 export class Messanger {
 	text: string | undefined = $state();
+	exclusive = $state(false);
 
-	set(text: string) {
+	set(text: string, exclusive = false) {
 		this.text = text;
+		this.exclusive = exclusive;
 	}
 
 	append(text: string) {

@@ -17,6 +17,10 @@
 
 	const crossOut = $derived(entity && hasHp(entity) && entity.hp === 0);
 
+	const showDesc = $derived(
+		entity && entity.desc && !(gamestate.message.text && gamestate.message.exclusive)
+	);
+
 	async function onact(choice: Choice) {
 		console.log(`Clicked menu button: ${choice.label}`);
 		gamestate.message.clear();
@@ -45,7 +49,7 @@
 		{:else if !gamestate.location.nameAlreadyShown(entity.name)}
 			<p class="mb-3 text-xl">{entity.name}</p>
 		{/if}
-		{#if entity.desc}<p class="mb-6 text-gray-300">{entity.desc}</p>{/if}
+		{#if showDesc}<p class="mb-6 text-gray-300">{entity.desc}</p>{/if}
 		{#if gamestate.message.text}
 			<p class="">{gamestate.message.text}</p>
 		{/if}

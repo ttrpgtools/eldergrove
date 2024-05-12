@@ -21,6 +21,8 @@ export async function messageAppend(state: GameState, msg: string, ctx: ActionCo
 }
 
 export async function messageSet(state: GameState, msg: string, ctx: ActionContext) {
+	const exclusive = msg.startsWith('!!');
+	if (exclusive) msg = msg.substring(2);
 	msg = injectContext(msg, ctx);
-	state.message.set(msg);
+	state.message.set(msg, exclusive);
 }

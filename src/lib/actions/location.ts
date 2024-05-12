@@ -37,3 +37,9 @@ export async function locationReturn(state: GameState, _: never, ctx: ActionCont
 		return setLocation(state.location.previous, state, ctx);
 	}
 }
+
+export async function locationDesc(state: GameState, desc: string) {
+	if (state.location.current) {
+		state.location.current.desc = desc;
+	}
+}
