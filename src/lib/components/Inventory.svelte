@@ -1,17 +1,18 @@
 <script lang="ts">
 	import type { Item } from '$lib/types';
-	import type { Character } from '$state/character.svelte';
-	import { canHeal } from '$util/item';
+	import type { GameState } from '$state/game.svelte';
 	import Button from '$ui/button/button.svelte';
 	import * as Dialog from '$ui/dialog';
-	let { character, open = $bindable() }: { character: Character; open: boolean } = $props();
+	import { isUsable } from '$util/item';
+	let { gamestate, open = $bindable() }: { gamestate: GameState; open: boolean } = $props();
+	const character = $derived(gamestate.character);
 	let shownItem: Item | undefined = $state();
 	const equippable = $derived(
 		shownItem &&
 			!character.isEquipped(shownItem) &&
 			(shownItem.type === 'armor' || shownItem.type === 'weapon')
 	);
-	const usable = $derived(shownItem ? canHeal(shownItem) : false);
+	const usable = $derived(shownItem ? isUsable(shownItem) : false);
 </script>
 
 <Dialog.Root
@@ -53,7 +54,10 @@
 								>
 							{/if}
 							{#if usable}
-								<Button onclick={() => character.useItem(shownItem)}>Use</Button>
+								<Button
+									onclick={() => gamestate.resolveActions([{ action: 'itemUse', arg: shownItem }])}
+									>Use</Button
+								>
 							{/if}
 						</div>
 					{/if}

@@ -15,5 +15,5 @@
 	</div>
 	<Location {location} />
 	<SceneWindow gamestate={data.state} />
-	<Character {character} />
+	<Character gamestate={data.state} />
 </main>

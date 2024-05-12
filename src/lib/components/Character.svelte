@@ -4,7 +4,9 @@
 	import Icon from '$ui/Icon.svelte';
 	import GearSlot from './GearSlot.svelte';
 	import Inventory from './Inventory.svelte';
-	let { character }: { character: Character } = $props();
+	import type { GameState } from '$state/game.svelte';
+	let { gamestate }: { gamestate: GameState } = $props();
+	const character = $derived(gamestate.character);
 	let inventoryOpen = $state(false);
 	let fullHp = $derived(`${character.hp}/${character.maxHp}`);
 	const ctx = $derived({ str: 5, dex: 3, wil: 3, hp: character.hp, coin: character.coin });
@@ -44,4 +46,4 @@
 		</div>
 	</div>
 </div>
-<Inventory {character} bind:open={inventoryOpen} />
+<Inventory {gamestate} bind:open={inventoryOpen} />

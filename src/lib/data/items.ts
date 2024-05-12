@@ -7,15 +7,7 @@ const items: Item[] = [
 		name: 'Rusty Dagger',
 		icon: '',
 		image: '/img/item/rusty-dagger.webp',
-		effects: [
-			{
-				id: 'rusty-dagger-slash',
-				name: 'Slash',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd4-1'
-			}
-		],
+		damage: { amt: 'd4-1', type: 'stabbing' },
 		where: 'hand',
 		desc: `Ooo... tetanus! Maybe you can open your mail with it.`
 	},
@@ -25,15 +17,7 @@ const items: Item[] = [
 		name: 'Iron Dagger',
 		icon: '',
 		image: '/img/item/iron-dagger.webp',
-		effects: [
-			{
-				id: 'iron-dagger-slash',
-				name: 'Slash',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd4'
-			}
-		],
+		damage: { amt: 'd4', type: 'stabbing' },
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},
@@ -63,15 +47,7 @@ const items: Item[] = [
 		name: 'Health Potion',
 		icon: '',
 		image: '/img/item/health-potion-sm.webp',
-		effects: [
-			{
-				id: 'health-potion-sm-healing',
-				name: 'Heal',
-				type: 'healing',
-				nature: 'medicinal',
-				amount: `d4+4`
-			}
-		],
+		effects: [{ action: 'hpHeal', arg: `d4+4` }],
 		desc: `You'd think this would taste like strawberry or cherry, but nope. Hope you like bitter.`
 	},
 	{
@@ -83,20 +59,19 @@ const items: Item[] = [
 		desc: ``
 	},
 	{
+		type: 'trinket',
+		id: 'yearlings/old-rope',
+		name: 'Old Rope',
+		image: '/img/item/old-rope.webp',
+		desc: `Some rope you found tangled in a bush.`
+	},
+	{
 		type: 'consumable',
 		id: 'yearlings/cure-potion',
 		name: 'Cure Potion',
 		icon: '',
 		image: '/img/item/health-potion-sm.webp',
-		effects: [
-			{
-				id: 'yearlings/cure-potion-healing',
-				name: 'Heal',
-				type: 'healing',
-				nature: 'medicinal',
-				amount: `10`
-			}
-		],
+		effects: [{ action: 'hpHeal', arg: 10 }],
 		desc: `You'd think this would taste like strawberry or cherry, but nope. Hope you like bitter.`
 	},
 	{
@@ -105,15 +80,7 @@ const items: Item[] = [
 		name: 'Bomb',
 		icon: '',
 		image: '/img/item/bomb.webp',
-		effects: [
-			{
-				id: 'yearlings/bomb-kaboom',
-				name: 'Kaboom',
-				type: 'attack',
-				nature: 'physical',
-				amount: '20'
-			}
-		],
+		effects: [{ action: 'npcDamage', arg: 20 }],
 		desc: `Kaboom!`
 	},
 	{
@@ -122,15 +89,10 @@ const items: Item[] = [
 		name: 'Rapier',
 		icon: '',
 		image: '/img/item/rapier.webp',
-		effects: [
-			{
-				id: 'yearlings/rapier-stab',
-				name: 'Stab',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd(2*[@str]+6)'
-			}
-		],
+		damage: {
+			amt: 'd(2*[@str]+6)',
+			type: 'stabbing'
+		},
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},
@@ -140,15 +102,7 @@ const items: Item[] = [
 		name: 'Phantom Blade',
 		icon: '',
 		image: '/img/item/phantom-blade.webp',
-		effects: [
-			{
-				id: 'yearlings/phantom-blade-slash',
-				name: 'Phase Slash',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd(2*[@str]+14)'
-			}
-		],
+		damage: { amt: 'd(2*[@str]+14)', type: 'slicing' },
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},
@@ -158,15 +112,7 @@ const items: Item[] = [
 		name: 'Katana',
 		icon: '',
 		image: '/img/item/katana.webp',
-		effects: [
-			{
-				id: 'yearlings/katana-slice',
-				name: 'Slice',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd(2*[@str]+20)'
-			}
-		],
+		damage: { amt: 'd(2*[@str]+20)', type: 'slicing' },
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},
@@ -176,15 +122,7 @@ const items: Item[] = [
 		name: 'eXaliber',
 		icon: '',
 		image: '/img/item/exaliber.webp',
-		effects: [
-			{
-				id: 'yearlings/exaliber-slash',
-				name: 'Mighty Slash',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd(2*[@str]+30)'
-			}
-		],
+		damage: { amt: 'd(2*[@str]+30)', type: 'slicing' },
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},
@@ -194,15 +132,7 @@ const items: Item[] = [
 		name: 'Masemune',
 		icon: '',
 		image: '/img/item/masemune.webp',
-		effects: [
-			{
-				id: 'yearlings/masemune-cut',
-				name: 'Cut',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd(2*[@str]+42)'
-			}
-		],
+		damage: { amt: 'd(2*[@str]+42)', type: 'slicing' },
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},
@@ -212,15 +142,7 @@ const items: Item[] = [
 		name: `Dragon's Bane`,
 		icon: '',
 		image: '/img/item/dragon-bane.webp',
-		effects: [
-			{
-				id: 'yearlings/dragon-bane-stab',
-				name: 'Stab',
-				type: 'attack',
-				nature: 'physical',
-				amount: 'd(2*[@str]+66)'
-			}
-		],
+		damage: { amt: 'd(2*[@str]+66)', type: 'stabbing' },
 		where: 'hand',
 		desc: `Simple, sharp and not rusty. Nice.`
 	},

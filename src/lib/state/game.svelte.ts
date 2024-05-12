@@ -1,6 +1,5 @@
 import { type Item, type Choice, type GameDef, type ActionContext } from '$lib/types';
 import { actions, isActionValid, type Action } from '$lib/actions';
-import { createMachine } from '$util/fsm.svelte';
 import { createNewCharacter, type Character } from './character.svelte';
 import { getLocationManager, type LocationManager } from './location.svelte';
 import { Messanger } from './messanger.svelte';
@@ -22,14 +21,6 @@ class GameStateImpl {
 	choices = new Stack<Choice[]>();
 	npc: NpcManager = $state()!;
 	item = new Stack<Item>();
-	mode = createMachine('exploring', {
-		exploring: {
-			fight: 'fighting'
-		},
-		fighting: {
-			win: 'exploring'
-		}
-	});
 
 	constructor(character: Character, location: LocationManager, npc: NpcManager) {
 		this.character = character;
@@ -44,7 +35,8 @@ class GameStateImpl {
 			if (!(act.action in actions)) throw `Unknown action ${act.action}`;
 			if (isActionValid(act, this, ctx)) {
 				console.log(`starting processing of action`, act);
-				const res = await actions[act.action](this, act.arg as never, ctx);
+				const arg = act.arg ?? (act.argFrom ? ctx.data[act.argFrom] : undefined);
+				const res = await actions[act.action](this, arg as never, ctx);
 				console.log(`results are in`, res, res?.toString());
 				if (res && isAsyncGenerator(res)) {
 					console.log(`looping over the inner generator`);

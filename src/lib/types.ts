@@ -8,6 +8,9 @@ export interface Entity extends Identifiable, Named {
 	desc?: string;
 	image?: string;
 	icon?: string;
+	effects?: Action[];
+	enter?: Action[];
+	exit?: Action[];
 }
 
 export interface Choice {
@@ -22,32 +25,13 @@ export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
 
 export type EquipSlot = 'hand' | 'torso' | 'head' | 'feet';
 
-type AttackType = 'physical' | 'elemental' | 'mental';
-type HealingType = 'medicinal' | 'magical' | 'spiritual';
-
-export interface Attack extends Entity {
-	type: 'attack';
-	nature: AttackType;
-	amount: string;
-}
-
-export interface Healing extends Entity {
-	type: 'healing';
-	nature: HealingType;
-	amount: string;
-}
-
-export type Effect = Attack | Healing;
-
 interface BaseItem extends Entity {
-	unique?: boolean;
-	effects?: Effect[];
-	enter?: Action[];
-	exit?: Action[];
+	rarity?: 'common' | 'rare' | 'mythical' | 'unique';
 }
 export interface Weapon extends BaseItem {
 	type: 'weapon';
 	where?: EquipSlot[] | EquipSlot;
+	damage?: { amt: string; type: string };
 	// Minimum strength? Other requirements?
 }
 
@@ -99,9 +83,6 @@ export interface RandomTable<T> {
 interface AdvancedEntity extends Entity {
 	coins?: number | string;
 	items?: RandomTable<string> | string[];
-	enter?: Action[];
-	exit?: Action[];
-	effects?: Effect[];
 }
 
 export interface Experience extends AdvancedEntity {
@@ -130,17 +111,6 @@ export interface InventoryItem {
 }
 
 export type HasHealth = { maxHp: number; hp: number };
-
-export interface Encounter {
-	msg?: string;
-	flow?: 'fight' | 'shop';
-	npc?: NpcInstance;
-	shop?: ShopItemInstance[];
-	actions?: Action[];
-	location?: string | Location;
-	flag?: string;
-	final?: boolean;
-}
 
 export interface ActionContext {
 	locations: Set<string>;

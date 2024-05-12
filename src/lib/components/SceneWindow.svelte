@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Choice } from '$lib/types';
 	import NavigateMenu from './NavigateMenu.svelte';
-	import BattleMenu from './BattleMenu.svelte';
 	import { hasHp } from '$util/validate';
 	import type { GameState } from '$state/game.svelte';
 	import { npcLabel } from '$util/npc';
@@ -16,20 +15,23 @@
 		gamestate.item.current ?? gamestate.npc.current ?? gamestate.location.current
 	);
 
-	$inspect(gamestate.character.counters);
+	const crossOut = $derived(entity && hasHp(entity) && entity.hp === 0);
 
 	async function onact(choice: Choice) {
+		console.log(`Clicked menu button: ${choice.label}`);
 		gamestate.message.clear();
 		await gamestate.resolveActions(choice.actions);
-	}
-	async function ondone(arg: string) {
-		gamestate.message.clear();
-		await gamestate.resolveActions([{ action: `encounterFinish`, arg }]);
 	}
 </script>
 
 <div class="pixel-corners--wrapper col-span-3 row-span-3">
 	{#if entity}
+		{#if crossOut}
+			<svg class="absolute z-10 size-full opacity-50">
+				<line x1="0" y1="100%" x2="100%" y2="0" class=" stroke-red-500 stroke-[16px]" />
+				<line x1="0" y1="0" x2="100%" y2="100%" class=" stroke-red-500 stroke-[16px]" />
+			</svg>
+		{/if}
 		<img src={entity.image ?? gamestate.location.current.image} alt={entity.name} />
 	{/if}
 </div>
@@ -50,14 +52,5 @@
 	{/if}
 </div>
 <div class="pixel-corners col-span-3 row-span-5 flex flex-col gap-2 p-4">
-	{#if gamestate.mode.state === 'fighting' && gamestate.npc.current}
-		<BattleMenu
-			character={gamestate.character}
-			npc={gamestate.npc.current}
-			{ondone}
-			message={gamestate.message}
-		/>
-	{:else if gamestate.mode.state === 'exploring'}
-		<NavigateMenu {gamestate} {onact} />
-	{/if}
+	<NavigateMenu {gamestate} {onact} />
 </div>

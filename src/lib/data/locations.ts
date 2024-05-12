@@ -29,7 +29,10 @@ const locations: Location[] = [
 		biome: 'beach',
 		image: '/img/location/starting-beach.webp',
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc', arg: ['crab', 'sandpiper'] }], label: 'Explore' },
+			{
+				actions: [{ action: 'encounterRandomNpc', arg: { table: ['crab', 'sandpiper'] } }],
+				label: 'Explore'
+			},
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Into Town' }
 		],
 		desc: `
@@ -65,7 +68,10 @@ const locations: Location[] = [
 		biome: 'meadow',
 		image: '/img/location/good-field.webp',
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc', arg: ['rat', 'scorpion'] }], label: 'Explore' },
+			{
+				actions: [{ action: 'encounterRandomNpc', arg: { table: ['rat', 'scorpion'] } }],
+				label: 'Explore'
+			},
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Town' }
 		],
 		desc: `
@@ -155,18 +161,34 @@ const locations: Location[] = [
 				actions: [
 					{
 						action: 'encounterRandomNpc',
-						arg: [
-							'yearlings/rat',
-							'yearlings/imp',
-							'yearlings/fox',
-							'yearlings/mongoose',
-							'yearlings/wolf',
-							'yearlings/warlock',
-							'yearlings/goblin',
-							'yearlings/bear',
-							'yearlings/xas',
-							'yearlings/geist'
-						]
+						arg: {
+							table: [
+								'yearlings/rat',
+								'yearlings/imp',
+								'yearlings/fox',
+								'yearlings/mongoose',
+								'yearlings/wolf',
+								'yearlings/warlock',
+								'yearlings/goblin',
+								'yearlings/bear',
+								'yearlings/xas',
+								'yearlings/geist'
+							],
+							followBy: [
+								{
+									action: 'messageSet',
+									arg: `You are in the field. The town, forest, and rocky area border the field.`
+								},
+								{
+									valid: { condition: 'flagIsNotSet', arg: 'found-rope' },
+									action: 'branch',
+									arg: {
+										on: { condition: 'counterIsEqual', arg: ['yearlings/grassy-field:wins', 1] },
+										isTrue: [{ action: 'itemFind', arg: 'yearlings/old-rope' }]
+									}
+								}
+							]
+						}
 					}
 				],
 				label: 'Explore'
@@ -193,18 +215,20 @@ const locations: Location[] = [
 				actions: [
 					{
 						action: 'encounterRandomNpc',
-						arg: [
-							'yearlings/druid',
-							'yearlings/demon',
-							'yearlings/dactyl',
-							'yearlings/cyclops',
-							'yearlings/t-rex',
-							'yearlings/ogre',
-							'yearlings/troll',
-							'yearlings/sidewinder',
-							'yearlings/cave-monkey',
-							'yearlings/paramanthis'
-						]
+						arg: {
+							table: [
+								'yearlings/druid',
+								'yearlings/demon',
+								'yearlings/dactyl',
+								'yearlings/cyclops',
+								'yearlings/t-rex',
+								'yearlings/ogre',
+								'yearlings/troll',
+								'yearlings/sidewinder',
+								'yearlings/cave-monkey',
+								'yearlings/paramanthis'
+							]
+						}
 					}
 				],
 				label: 'Explore'
@@ -328,7 +352,10 @@ const locations: Location[] = [
 		biome: 'forest',
 		image: '/img/location/doomed-woods.webp',
 		choices: [
-			{ actions: [{ action: 'encounterRandomNpc', arg: ['yearlings/kamul'] }], label: 'Explore' },
+			{
+				actions: [{ action: 'encounterRandomNpc', arg: { table: ['yearlings/kamul'] } }],
+				label: 'Explore'
+			},
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/grassy-field' }],
 				label: 'Leave the Woods'
