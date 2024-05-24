@@ -66,6 +66,13 @@ const items: Item[] = [
 		desc: `Some rope you found tangled in a bush.`
 	},
 	{
+		type: 'trinket',
+		id: 'yearlings/rope',
+		name: 'Rope',
+		image: '/img/item/rope.webp',
+		desc: `50ft of sturdy looking rope.`
+	},
+	{
 		type: 'consumable',
 		id: 'yearlings/cure-potion',
 		name: 'Cure Potion',

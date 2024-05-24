@@ -7,7 +7,7 @@ import { encounterFinish, encounterRandomNpc } from './encounter';
 import { shopStart, shopFinish } from './shop';
 import { coinsAdd, coinsRemove } from './coins';
 import { choicesPop, choicesPush, yesno } from './choices';
-import { inventoryAdd, itemFind, itemPop, itemPush, itemUse } from './items';
+import { inventoryAdd, inventoryRemove, itemFind, itemPop, itemPush, itemUse } from './items';
 import type { ActionContext } from '$lib/types';
 import { counterDec, counterInc, counterReset } from './counters';
 import { hpDamage, hpHeal } from './hp';
@@ -37,6 +37,7 @@ export const actions = {
 	itemPop,
 	itemPush,
 	inventoryAdd,
+	inventoryRemove,
 	itemUse,
 	itemFind,
 	attackFromCharacter,

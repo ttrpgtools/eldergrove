@@ -15,6 +15,10 @@ export async function inventoryAdd(state: GameState, item: Item) {
 	state.character.addToInventory(item);
 }
 
+export async function inventoryRemove(state: GameState, item: Item | string) {
+	state.character.removeFromInventory(item);
+}
+
 export async function itemUse(state: GameState, item: Item | undefined) {
 	if (!item || state.character.getInventoryCount(item) === 0 || !item.effects) return;
 	return (async function* () {

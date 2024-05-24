@@ -323,6 +323,36 @@ const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/general-store.webp',
 		parent: 'yearlings/pylaim',
+		enter: [
+			{
+				action: 'branch',
+				arg: {
+					on: { condition: 'inventoryContains', arg: 'yearlings/old-rope' },
+					isTrue: [
+						{
+							valid: { condition: 'flagIsSet', arg: 'declined-rope', not: true },
+							action: 'messageSet',
+							arg: `As you walk into the item shop the man behind the counter sees your old rope and warns "That old rope looks rotten to me. You're in luck, I just got some new rope in stock. I'll trade you for free if you send folks my way." Do you take the offered rope?`
+						},
+						{
+							valid: { condition: 'flagIsSet', arg: 'declined-rope' },
+							action: 'messageSet',
+							arg: `"My rope trade is still available." Do you take the offered rope?`
+						},
+						{
+							action: 'yesno',
+							arg: {
+								yes: [
+									{ action: 'inventoryRemove', arg: 'yearlings/old-rope' },
+									{ action: 'inventoryAdd', arg: 'yearlings/rope' }
+								],
+								no: [{ action: 'flagSet', arg: 'declined-rope' }]
+							}
+						}
+					]
+				}
+			}
+		],
 		choices: [
 			{
 				actions: [{ action: 'shopStart', arg: `Nothing but the finest quality items!` }],
@@ -334,7 +364,7 @@ const locations: Location[] = [
 			{ item: 'yearlings/cure-potion', stock: 5, cost: 10, willBuy: false },
 			{ item: 'yearlings/bomb', stock: 5, cost: 15, willBuy: false }
 		],
-		desc: `What will you have?`
+		desc: `What'll it be?`
 	},
 	{
 		id: 'yearlings/pylaim/teller',

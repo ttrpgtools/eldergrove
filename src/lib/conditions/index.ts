@@ -6,6 +6,7 @@ import { counterIsEqual } from './counters';
 import { xpMoreThan } from './exp';
 import { flagIsSet, flagIsNotSet } from './flags';
 import { hpFull, hpIs } from './hp';
+import { inventoryContains } from './items';
 import { levelAtLeast } from './level';
 import { npcDead, npcNotDead } from './npc';
 
@@ -13,6 +14,7 @@ const conditions = {
 	flagIsSet,
 	flagIsNotSet,
 	counterIsEqual,
+	inventoryContains,
 	xpMoreThan,
 	coinsAtLeast,
 	coinsLessThan,
