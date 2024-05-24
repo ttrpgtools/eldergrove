@@ -1,4 +1,4 @@
-import type { ActionContext, ActionContextDataKey } from '$lib/types';
+import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 
 export async function messageClear(state: GameState) {
@@ -6,9 +6,9 @@ export async function messageClear(state: GameState) {
 }
 
 function injectContext(msg: string, ctx: ActionContext) {
-	return msg.replace(/\[([^\]]+)\]/g, (_, key: ActionContextDataKey) => {
-		if (key in ctx.data) {
-			return ctx.data[key].toString();
+	return msg.replace(/\[([^\]]+)\]/g, (_, key: keyof ActionContext) => {
+		if (key in ctx) {
+			return ctx[key]?.toString() ?? '';
 		} else {
 			throw new Error(`Context key '${key}' not found from message '${msg}'`);
 		}

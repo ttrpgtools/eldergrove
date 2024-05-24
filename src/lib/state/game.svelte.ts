@@ -9,8 +9,7 @@ import { isAsyncGenerator } from '$util/validate';
 
 function makeContext(): ActionContext {
 	return {
-		locations: new Set(),
-		data: {}
+		locations: new Set()
 	};
 }
 
@@ -35,8 +34,7 @@ class GameStateImpl {
 			if (!(act.action in actions)) throw `Unknown action ${act.action}`;
 			if (isActionValid(act, this, ctx)) {
 				console.log(`starting processing of action`, act);
-				const arg = act.arg ?? (act.argFrom ? ctx.data[act.argFrom] : undefined);
-				const res = await actions[act.action](this, arg as never, ctx);
+				const res = await actions[act.action](this, act.arg as never, ctx);
 				console.log(`results are in`, res, res?.toString());
 				if (res && isAsyncGenerator(res)) {
 					console.log(`looping over the inner generator`);

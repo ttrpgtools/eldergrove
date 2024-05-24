@@ -8,7 +8,7 @@ import { shopStart, shopFinish } from './shop';
 import { coinsAdd, coinsRemove } from './coins';
 import { choicesPop, choicesPush, yesno } from './choices';
 import { inventoryAdd, itemFind, itemPop, itemPush, itemUse } from './items';
-import type { ActionContext, ActionContextDataKey } from '$lib/types';
+import type { ActionContext } from '$lib/types';
 import { counterDec, counterInc, counterReset } from './counters';
 import { hpDamage, hpHeal } from './hp';
 import { diceRoll } from './dice';
@@ -64,6 +64,5 @@ export type ActionName = keyof typeof actions;
 export interface Action {
 	action: ActionName;
 	arg?: unknown;
-	argFrom?: ActionContextDataKey;
 	valid?: Conditional;
 }

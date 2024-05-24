@@ -20,7 +20,6 @@ export async function diceRoll(
 		rollContext['#hp'] = npc.hp;
 	}
 	const value = evaluateDiceRoll(formula, rollContext);
-	ctx.data.nDiceRoll = value;
-	ctx.data.nDiceRollMinZero = Math.max(0, value);
-	console.log(`diceRoll in context`, ctx.data);
+	ctx.rollResult = value;
+	console.log(`diceRoll in context`, ctx.rollResult);
 }

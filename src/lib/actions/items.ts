@@ -30,7 +30,10 @@ export async function itemUse(state: GameState, item: Item | undefined) {
   return true; */
 }
 
-export async function itemFind(state: GameState, item: Item | string) {
+export async function itemFind(
+	state: GameState,
+	{ item, takeActions }: { item: Item | string; takeActions: Action[] }
+) {
 	return (async function* () {
 		if (typeof item === 'string') {
 			item = await getItem(item);
@@ -44,10 +47,12 @@ export async function itemFind(state: GameState, item: Item | string) {
 						label: 'Take it!',
 						actions: [
 							{ action: 'inventoryAdd', arg: item },
+							...takeActions,
 							{ action: 'choicesPop' },
 							{ action: 'itemPop' }
 						]
-					}
+					},
+					{ label: 'No Thanks...', actions: [{ action: 'choicesPop' }, { action: 'itemPop' }] }
 				]
 			}
 		] as Action[];

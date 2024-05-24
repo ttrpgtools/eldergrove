@@ -176,7 +176,15 @@ const locations: Location[] = [
 									action: 'branch',
 									arg: {
 										on: { condition: 'counterIsEqual', arg: ['yearlings/grassy-field:wins', 1] },
-										isTrue: [{ action: 'itemFind', arg: 'yearlings/old-rope' }]
+										isTrue: [
+											{
+												action: 'itemFind',
+												arg: {
+													item: 'yearlings/old-rope',
+													takeActions: [{ action: 'flagSet', arg: 'found-rope' }]
+												}
+											}
+										]
 									}
 								}
 							]

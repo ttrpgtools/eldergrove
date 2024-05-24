@@ -1,9 +1,11 @@
+import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { rollFormula } from '$util/dice';
 
-export async function npcDamage(state: GameState, amt: number) {
+export async function npcDamage(state: GameState, amt: number | undefined, ctx: ActionContext) {
 	if (state.npc.current) {
-		state.npc.current.hp = Math.max(0, state.npc.current.hp - (amt ?? 0));
+		amt = amt ?? Math.max(0, ctx.rollResult ?? 0);
+		state.npc.current.hp = Math.max(0, state.npc.current.hp - amt);
 	}
 }
 

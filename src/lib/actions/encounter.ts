@@ -1,5 +1,5 @@
 import { getNpcInstance } from '$data/npcs';
-import type { ActionContext, NpcInstance, RandomTable } from '$lib/types';
+import type { NpcInstance, RandomTable } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { npcLabel } from '$util/npc';
 import { rollOnTable } from '$util/table';
@@ -31,7 +31,7 @@ async function* setNpc(npc: string | NpcInstance, state: GameState, followBy?: A
 				{ action: 'attackFromCharacter' },
 				{
 					action: 'messageSet',
-					arg: `You did [nDiceRollMinZero] damage to ${npcLabel(npc, true, false)}.`
+					arg: `You did [rollResult] damage to ${npcLabel(npc, true, false)}.`
 				},
 				{
 					action: 'branch',
@@ -61,6 +61,10 @@ async function* setNpc(npc: string | NpcInstance, state: GameState, followBy?: A
 						],
 						isFalse: [
 							{
+								action: 'choicesPush',
+								arg: []
+							},
+							{
 								action: 'wait',
 								arg: 2000
 							},
@@ -69,14 +73,14 @@ async function* setNpc(npc: string | NpcInstance, state: GameState, followBy?: A
 								arg: npc
 							},
 							{
-								valid: { condition: 'ctxEquals', arg: ['nDiceRollMinZero', 0] },
+								valid: { condition: 'ctxRollEquals', arg: 0 },
 								action: 'messageSet',
 								arg: `${npcLabel(npc, true)} missed you!`
 							},
 							{
-								valid: { condition: 'ctxEquals', arg: ['nDiceRollMinZero', 0], not: true },
+								valid: { condition: 'ctxRollEquals', arg: 0, not: true },
 								action: 'messageSet',
-								arg: `${npcLabel(npc, true)} hit you for [nDiceRollMinZero] damage.`
+								arg: `${npcLabel(npc, true)} hit you for [rollResult] damage.`
 							},
 							{
 								valid: { condition: 'hpIs', arg: 0 },
@@ -87,7 +91,8 @@ async function* setNpc(npc: string | NpcInstance, state: GameState, followBy?: A
 								valid: { condition: 'hpIs', arg: 0 },
 								action: 'choicesPush',
 								arg: [] // Game over for now
-							}
+							},
+							{ action: 'choicesPop' }
 						]
 					}
 				}
@@ -110,10 +115,9 @@ export async function encounterRandomNpc(
 	return setNpc(results[0], state, followBy);
 }
 
-export async function encounterFinish(state: GameState, result: string, ctx: ActionContext) {
+export async function encounterFinish(state: GameState, result: string) {
 	return (async function* () {
 		if (state.npc.current) {
-			ctx.data.isVictory = result === 'win';
 			// TODO: Is this generic or provided per location via actions?
 			const streakKey = `${state.location.current.id}:wins`;
 			const streakAction: Action = {
