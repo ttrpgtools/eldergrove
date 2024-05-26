@@ -5,9 +5,9 @@ import type { Action } from '.';
 const NATURAL = `d[#maxhp]-0.5*([@armor]+[@dex])`;
 const UNARMED = `d4 + [@str]`;
 
-function basicNpcAttack(formula: string, npc: NpcInstance) {
+function basicNpcAttack(formula: string) {
 	const actions: Action[] = [
-		{ action: 'diceRoll', arg: { formula, npc } },
+		{ action: 'diceRoll', arg: formula },
 		{ action: 'diceMinZero' },
 		{ action: 'hpDamage' }
 	];
@@ -16,16 +16,18 @@ function basicNpcAttack(formula: string, npc: NpcInstance) {
 
 function basicCharacterAttack({ amt }: { amt: string; type: string }) {
 	const actions: Action[] = [
-		{ action: 'diceRoll', arg: { formula: amt } },
+		{ action: 'diceRoll', arg: amt },
 		{ action: 'diceMinZero' },
 		{ action: 'npcDamage' }
 	];
 	return actions;
 }
 
-export async function attackFromNpc(_: GameState, npc: NpcInstance) {
+export async function attackFromNpc(state: GameState, npc: NpcInstance | undefined) {
 	return (async function* () {
-		yield npc.effects && npc.effects.length ? npc.effects : basicNpcAttack(NATURAL, npc);
+		npc = npc ?? state.npc.current;
+		if (!npc) return;
+		yield npc.effects && npc.effects.length ? npc.effects : basicNpcAttack(NATURAL);
 	})();
 }
 

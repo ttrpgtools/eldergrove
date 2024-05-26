@@ -1,6 +1,8 @@
+import { getItem } from '$data/items';
 import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { rollFormula } from '$util/dice';
+import { rollOnTable } from '$util/table';
 
 export async function npcDamage(state: GameState, amt: number | undefined, ctx: ActionContext) {
 	if (state.npc.current) {
@@ -23,6 +25,12 @@ export async function npcLoot(state: GameState) {
 		state.character.coin += coin;
 		const leveled = state.character.gainExperience(npc.exp ?? 0);
 		state.message.append(` You found ${coin} coins and earned ${npc.exp} experience.`);
+		if (npc.items) {
+			const itemId = rollOnTable(npc.items);
+			const item = await getItem(itemId[0]);
+			await state.character.addToInventory(item);
+			state.message.append(` You also found: ${item.name}.`);
+		}
 		if (leveled) {
 			state.message.append(` You leveled up!`);
 		}

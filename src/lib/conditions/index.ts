@@ -1,7 +1,7 @@
 import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { coinsAtLeast, coinsLessThan } from './coins';
-import { ctxRollEquals } from './context';
+import { ctxRollEquals, ctxWasVictory } from './context';
 import { counterIsEqual } from './counters';
 import { xpMoreThan } from './exp';
 import { flagIsSet, flagIsNotSet } from './flags';
@@ -23,7 +23,8 @@ const conditions = {
 	levelAtLeast,
 	npcDead,
 	npcNotDead,
-	ctxRollEquals
+	ctxRollEquals,
+	ctxWasVictory
 } as const;
 
 export type ConditionName = keyof typeof conditions;

@@ -1,5 +1,5 @@
 import { getNpcInstance } from '$data/npcs';
-import type { NpcInstance, RandomTable } from '$lib/types';
+import type { ActionContext, NpcInstance, RandomTable } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { npcLabel } from '$util/npc';
 import { rollOnTable } from '$util/table';
@@ -115,9 +115,10 @@ export async function encounterRandomNpc(
 	return setNpc(results[0], state, followBy);
 }
 
-export async function encounterFinish(state: GameState, result: string) {
+export async function encounterFinish(state: GameState, result: string, ctx: ActionContext) {
 	return (async function* () {
 		if (state.npc.current) {
+			ctx.encounterVictory = result === 'win';
 			// TODO: Is this generic or provided per location via actions?
 			const streakKey = `${state.location.current.id}:wins`;
 			const streakAction: Action = {
@@ -125,11 +126,11 @@ export async function encounterFinish(state: GameState, result: string) {
 				arg: streakKey
 			};
 			yield [streakAction];
+			state.choices.pop();
 			if (state.npc.current.exit) {
 				yield state.npc.current.exit;
 			}
 		}
-		state.choices.pop();
 		state.npc.clear();
 	})();
 }

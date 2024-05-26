@@ -241,19 +241,33 @@ const namedNpcs: NpcInstance[] = [
 		id: 'yearlings/morlin',
 		name: 'Morlin',
 		image: '/img/npc/morlin.webp',
-		maxHp: 10,
-		hp: 10,
+		maxHp: 110,
+		hp: 110,
 		coins: `2d20`,
-		exp: 10
+		exp: 200,
+		items: ['yearlings/dragon-bane'],
+		exit: [
+			{
+				action: 'flagSet',
+				arg: 'beat-morlin',
+				valid: { condition: 'ctxWasVictory' }
+			},
+			{
+				action: 'locationChange',
+				arg: 'yearlings/rocky-area',
+				valid: { condition: 'ctxWasVictory' }
+			}
+		],
+		desc: `A powerful wizard, gone a bit stir crazy alone in this cave for so long. Violently guards his collection of artifacts.`
 	},
 	{
 		id: 'yearlings/kamul',
 		name: 'Kamul',
 		image: '/img/npc/kamul.webp',
-		maxHp: 10,
-		hp: 10,
-		coins: `2d20`,
-		exp: 10
+		maxHp: 180,
+		hp: 180,
+		coins: 0,
+		exp: 0
 	}
 ];
 

@@ -46,7 +46,11 @@
 			<button
 				type="button"
 				class="nes-btn"
-				onclick={() => gamestate.resolveActions([{ action: 'hpHeal', arg: 'd20' }])}>Map</button
+				onclick={() =>
+					gamestate.resolveActions([
+						{ action: 'diceRoll', arg: '[@maxhp]-[@hp]' },
+						{ action: 'hpHeal' }
+					])}>Fill</button
 			>
 		</div>
 		<div class="col-span-3">

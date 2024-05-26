@@ -47,7 +47,7 @@ const items: Item[] = [
 		name: 'Health Potion',
 		icon: '',
 		image: '/img/item/health-potion-sm.webp',
-		effects: [{ action: 'hpHeal', arg: `d4+4` }],
+		effects: [{ action: 'diceRoll', arg: `d4+4` }, { action: 'hpHeal' }],
 		desc: `You'd think this would taste like strawberry or cherry, but nope. Hope you like bitter.`
 	},
 	{

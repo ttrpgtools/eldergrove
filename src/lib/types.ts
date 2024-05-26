@@ -115,6 +115,7 @@ export type HasHealth = { maxHp: number; hp: number };
 export interface ActionContext {
 	locations: Set<string>;
 	rollResult?: number;
+	encounterVictory?: boolean;
 }
 
 export interface GameEvents {

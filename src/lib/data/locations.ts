@@ -227,6 +227,21 @@ const locations: Location[] = [
 								'yearlings/sidewinder',
 								'yearlings/cave-monkey',
 								'yearlings/paramanthis'
+							],
+							followBy: [
+								{
+									valid: { condition: 'flagIsNotSet', arg: 'beat-morlin' },
+									action: 'branch',
+									arg: {
+										on: { condition: 'counterIsEqual', arg: ['yearlings/rocky-area:wins', 1] },
+										isTrue: [
+											{
+												action: 'locationChange',
+												arg: 'yearlings/morlin-cave'
+											}
+										]
+									}
+								}
 							]
 						}
 					}
@@ -239,10 +254,34 @@ const locations: Location[] = [
 			},
 			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
 		],
+		exit: [{ action: 'counterReset', arg: 'yearlings/rocky-area:wins' }],
 		desc: `
     A large barren scrubland, this area has a rough edge to it. Be careful to mind
     your step here. The field and town are not too far.
     `
+	},
+	{
+		id: 'yearlings/morlin-cave',
+		name: 'Mysterious Cravasse',
+		biome: 'rocky',
+		parent: 'yearlings/rocky-area',
+		image: '/img/location/morlin-cave.webp',
+		enter: [
+			{
+				action: 'messageSet',
+				arg: `It looks like you'll need some rope to get down into this place.`,
+				valid: { condition: 'flagIsNotSet', arg: 'found-rope' }
+			}
+		],
+		choices: [
+			{
+				label: 'Climb down',
+				actions: [{ action: 'encounterRandomNpc', arg: { table: ['yearlings/morlin'] } }],
+				show: { condition: 'flagIsSet', arg: 'found-rope' }
+			},
+			{ label: 'Head back', actions: [{ action: 'locationChange', arg: 'yearlings/rocky-area' }] }
+		],
+		desc: `You come across a cave in the ground.`
 	},
 	{
 		id: 'yearlings/pylaim',

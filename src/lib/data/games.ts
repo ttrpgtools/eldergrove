@@ -6,9 +6,9 @@ const games: GameDef[] = [
 		name: 'Yearlings',
 		start: 'yearlings/grassy-field',
 		baseChar: {
-			hp: 30,
-			coin: 150,
-			str: 4,
+			hp: 130,
+			coin: 15000,
+			str: 14,
 			dex: 3,
 			wil: 3,
 			exp: 0,
