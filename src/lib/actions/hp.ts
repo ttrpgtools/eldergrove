@@ -5,6 +5,7 @@ import { rollFormula } from '$util/dice';
 export async function hpDamage(state: GameState, amt: number | undefined, ctx: ActionContext) {
 	amt = amt ?? Math.max(0, ctx.rollResult ?? 0);
 	state.character.takeDamage(amt);
+	state.events.emit('hpChange', 0 - amt);
 }
 
 export async function hpHeal(state: GameState, amt: number | string) {
@@ -12,4 +13,5 @@ export async function hpHeal(state: GameState, amt: number | string) {
 		amt = rollFormula(amt);
 	}
 	state.character.heal(amt);
+	state.events.emit('hpChange', amt);
 }

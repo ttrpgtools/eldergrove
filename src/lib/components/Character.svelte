@@ -1,15 +1,28 @@
 <script lang="ts">
-	import type { Character } from '$state/character.svelte';
 	import { evaluateDiceRoll } from '$util/dice';
 	import Icon from '$ui/Icon.svelte';
 	import GearSlot from './GearSlot.svelte';
 	import Inventory from './Inventory.svelte';
 	import type { GameState } from '$state/game.svelte';
+	import { tick } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import { cubicInOut } from 'svelte/easing';
 	let { gamestate }: { gamestate: GameState } = $props();
 	const character = $derived(gamestate.character);
 	let inventoryOpen = $state(false);
 	let fullHp = $derived(`${character.hp}/${character.maxHp}`);
-	const ctx = $derived({ str: 5, dex: 3, wil: 3, hp: character.hp, coin: character.coin });
+
+	let floatChar: { label: string; color: string } | undefined = $state();
+	gamestate.events.on('hpChange', async (amt) => {
+		floatChar =
+			amt === 0
+				? { label: 'MISS', color: 'text-black' }
+				: amt < 0
+					? { label: `${amt}`, color: 'text-red-500' }
+					: { label: `+${amt}`, color: 'text-emerald-500' };
+		await tick();
+		floatChar = undefined;
+	});
 </script>
 
 <div class="pixel-corners col-span-5 row-span-5 p-4">
@@ -33,7 +46,7 @@
 			<button
 				type="button"
 				class="nes-btn"
-				onclick={() => console.log(evaluateDiceRoll(`d(2*d[coin] + 5)`, ctx))}>Map</button
+				onclick={() => gamestate.resolveActions([{ action: 'hpHeal', arg: 'd20' }])}>Map</button
 			>
 		</div>
 		<div class="col-span-3">
@@ -45,5 +58,24 @@
 			<GearSlot {character} where="feet" icon="boot" />
 		</div>
 	</div>
+	{#if floatChar}
+		<div
+			class="floater absolute inset-0 z-[100] flex items-center justify-center text-5xl {floatChar.color}"
+			out:fly={{ y: -50, duration: 1500, easing: cubicInOut }}
+		>
+			{floatChar.label}
+		</div>
+	{/if}
 </div>
 <Inventory {gamestate} bind:open={inventoryOpen} />
+
+<style>
+	.floater {
+		text-shadow:
+			3px 3px 0 #fff,
+			-3px -3px 0 #fff,
+			3px -3px 0 #fff,
+			-3px 3px 0 #fff,
+			3px 3px 0 #fff;
+	}
+</style>

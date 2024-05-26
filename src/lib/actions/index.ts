@@ -11,7 +11,7 @@ import { inventoryAdd, inventoryRemove, itemFind, itemPop, itemPush, itemUse } f
 import type { ActionContext } from '$lib/types';
 import { counterDec, counterInc, counterReset } from './counters';
 import { hpDamage, hpHeal } from './hp';
-import { diceRoll } from './dice';
+import { diceMinZero, diceRoll } from './dice';
 import { npcDamage, npcHeal, npcLoot } from './npc';
 import { attackFromCharacter, attackFromNpc } from './attacks';
 import { branch, wait } from './control';
@@ -32,6 +32,7 @@ export const actions = {
 	hpDamage,
 	hpHeal,
 	diceRoll,
+	diceMinZero,
 	choicesPop,
 	choicesPush,
 	itemPop,

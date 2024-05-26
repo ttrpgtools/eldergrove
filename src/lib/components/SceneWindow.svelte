@@ -4,6 +4,9 @@
 	import { hasHp } from '$util/validate';
 	import type { GameState } from '$state/game.svelte';
 	import { npcLabel } from '$util/npc';
+	import { fly } from 'svelte/transition';
+	import { tick } from 'svelte';
+	import { cubicInOut } from 'svelte/easing';
 
 	let {
 		gamestate
@@ -26,6 +29,17 @@
 		gamestate.message.clear();
 		await gamestate.resolveActions(choice.actions);
 	}
+
+	let floatNpc: { label: string; color: string } | undefined = $state();
+	gamestate.events.on('npcHpChange', async (amt) => {
+		if (amt === 0) return;
+		floatNpc =
+			amt < 0
+				? { label: `${amt}`, color: 'text-red-500' }
+				: { label: `+${amt}`, color: 'text-emerald-500' };
+		await tick();
+		floatNpc = undefined;
+	});
 </script>
 
 <div class="pixel-corners--wrapper col-span-3 row-span-3">
@@ -35,6 +49,14 @@
 				<line x1="0" y1="100%" x2="100%" y2="0" class=" stroke-red-500 stroke-[16px]" />
 				<line x1="0" y1="0" x2="100%" y2="100%" class=" stroke-red-500 stroke-[16px]" />
 			</svg>
+		{/if}
+		{#if floatNpc}
+			<div
+				class="floater absolute z-20 flex size-full items-center justify-center text-5xl {floatNpc.color}"
+				out:fly={{ y: -50, duration: 1500, easing: cubicInOut }}
+			>
+				{floatNpc.label}
+			</div>
 		{/if}
 		<img src={entity.image ?? gamestate.location.current.image} alt={entity.name} />
 	{/if}
@@ -58,3 +80,14 @@
 <div class="pixel-corners col-span-3 row-span-5 flex flex-col gap-2 p-4">
 	<NavigateMenu {gamestate} {onact} />
 </div>
+
+<style>
+	.floater {
+		text-shadow:
+			3px 3px 0 #fff,
+			-3px -3px 0 #fff,
+			3px -3px 0 #fff,
+			-3px 3px 0 #fff,
+			3px 3px 0 #fff;
+	}
+</style>

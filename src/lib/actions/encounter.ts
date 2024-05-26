@@ -66,7 +66,7 @@ async function* setNpc(npc: string | NpcInstance, state: GameState, followBy?: A
 							},
 							{
 								action: 'wait',
-								arg: 2000
+								arg: 1500
 							},
 							{
 								action: 'attackFromNpc',

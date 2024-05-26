@@ -1,4 +1,10 @@
-import { type Item, type Choice, type GameDef, type ActionContext } from '$lib/types';
+import {
+	type Item,
+	type Choice,
+	type GameDef,
+	type ActionContext,
+	type GameEvents
+} from '$lib/types';
 import { actions, isActionValid, type Action } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
 import { getLocationManager, type LocationManager } from './location.svelte';
@@ -6,6 +12,7 @@ import { Messanger } from './messanger.svelte';
 import { getNpcManager, type NpcManager } from './npc.svelte';
 import { Stack } from './stack.svelte';
 import { isAsyncGenerator } from '$util/validate';
+import { EventEmitter } from '$util/events';
 
 function makeContext(): ActionContext {
 	return {
@@ -20,6 +27,7 @@ class GameStateImpl {
 	choices = new Stack<Choice[]>();
 	npc: NpcManager = $state()!;
 	item = new Stack<Item>();
+	events = new EventEmitter<GameEvents>();
 
 	constructor(character: Character, location: LocationManager, npc: NpcManager) {
 		this.character = character;

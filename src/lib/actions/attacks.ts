@@ -6,13 +6,18 @@ const NATURAL = `d[#maxhp]-0.5*([@armor]+[@dex])`;
 const UNARMED = `d4 + [@str]`;
 
 function basicNpcAttack(formula: string, npc: NpcInstance) {
-	const actions: Action[] = [{ action: 'diceRoll', arg: { formula, npc } }, { action: 'hpDamage' }];
+	const actions: Action[] = [
+		{ action: 'diceRoll', arg: { formula, npc } },
+		{ action: 'diceMinZero' },
+		{ action: 'hpDamage' }
+	];
 	return actions;
 }
 
 function basicCharacterAttack({ amt }: { amt: string; type: string }) {
 	const actions: Action[] = [
 		{ action: 'diceRoll', arg: { formula: amt } },
+		{ action: 'diceMinZero' },
 		{ action: 'npcDamage' }
 	];
 	return actions;

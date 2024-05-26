@@ -117,6 +117,11 @@ export interface ActionContext {
 	rollResult?: number;
 }
 
+export interface GameEvents {
+	npcHpChange: number;
+	hpChange: number;
+}
+
 export interface GameDef extends Entity {
 	start: string;
 	baseChar: {
