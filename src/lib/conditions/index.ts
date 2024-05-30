@@ -33,7 +33,12 @@ export interface Conditional {
 	arg?: unknown;
 	not?: boolean;
 }
-export function checkCondition(when: Conditional, state: GameState, ctx?: ActionContext) {
+export type ConditionFn = (state: GameState) => boolean;
+export type Condition = Conditional | ConditionFn;
+export function checkCondition(when: Condition, state: GameState, ctx?: ActionContext) {
+	if (typeof when === 'function') {
+		return when(state);
+	}
 	if (!(when.condition in conditions)) throw `Unknown condition ${when.condition}`;
 	const fn = conditions[when.condition];
 	const result = fn(state, when.arg as never, ctx); // ugh.

@@ -5,7 +5,7 @@ import {
 	type ActionContext,
 	type GameEvents
 } from '$lib/types';
-import { actions, isActionValid, type Action } from '$lib/actions';
+import { actions as availableActions, isActionValid, type Actions } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
 import { getLocationManager, type LocationManager } from './location.svelte';
 import { Messanger } from './messanger.svelte';
@@ -35,14 +35,17 @@ class GameStateImpl {
 		this.npc = npc;
 	}
 
-	async resolveActions(list: Action[], ctx?: ActionContext) {
-		console.log(`resolving Actions`, list);
+	async resolveActions(actions: Actions, ctx?: ActionContext) {
+		if (typeof actions === 'function') {
+			return await actions(this);
+		}
+		console.log(`resolving Actions array`, actions);
 		ctx = ctx ?? makeContext();
-		for await (const act of list) {
-			if (!(act.action in actions)) throw `Unknown action ${act.action}`;
-			if (isActionValid(act, this, ctx)) {
-				console.log(`starting processing of action`, act);
-				const res = await actions[act.action](this, act.arg as never, ctx);
+		for await (const step of actions) {
+			if (!(step.action in availableActions)) throw `Unknown action ${step.action}`;
+			if (isActionValid(step, this, ctx)) {
+				console.log(`starting processing of action step`, step);
+				const res = await availableActions[step.action](this, step.arg as never, ctx);
 				console.log(`results are in`, res, res?.toString());
 				if (res && isAsyncGenerator(res)) {
 					console.log(`looping over the inner generator`);

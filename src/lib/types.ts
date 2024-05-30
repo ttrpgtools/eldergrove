@@ -1,5 +1,5 @@
-import type { Action } from './actions';
-import type { Conditional } from './conditions';
+import type { Actions } from './actions';
+import type { Condition } from './conditions';
 
 export type Identifiable = { id: string };
 export type Named = { name: string };
@@ -8,15 +8,15 @@ export interface Entity extends Identifiable, Named {
 	desc?: string;
 	image?: string;
 	icon?: string;
-	effects?: Action[];
-	enter?: Action[];
-	exit?: Action[];
+	effects?: Actions;
+	enter?: Actions;
+	exit?: Actions;
 }
 
 export interface Choice {
 	label: string;
-	show?: Conditional;
-	actions: Action[];
+	show?: Condition;
+	actions: Actions;
 }
 
 export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
@@ -73,7 +73,7 @@ export interface ShopItemInstance extends ShopItem {
 interface TableOption<T> {
 	trigger: number | [number, number];
 	value: T;
-	active?: Conditional;
+	active?: Condition;
 }
 
 export interface RandomTable<T> {

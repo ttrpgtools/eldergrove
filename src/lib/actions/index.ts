@@ -68,3 +68,6 @@ export interface Action {
 	arg?: unknown;
 	valid?: Conditional;
 }
+
+export type ActionFn = (state: GameState) => void | Promise<void>;
+export type Actions = Action[] | ActionFn;
