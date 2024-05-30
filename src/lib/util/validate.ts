@@ -20,6 +20,6 @@ export function hasHp(entity: Entity): entity is HasHealth & Identifiable & Name
 	return 'maxHp' in entity && 'hp' in entity;
 }
 
-export function isAsyncGenerator(fn: unknown) {
+export function isAsyncGenerator<T>(fn: unknown): fn is AsyncGenerator<T> {
 	return Object.prototype.toString.call(fn) === '[object AsyncGenerator]';
 }

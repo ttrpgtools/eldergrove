@@ -42,12 +42,16 @@ class GameStateImpl {
 		console.log(`resolving Actions array`, actions);
 		ctx = ctx ?? makeContext();
 		for await (const step of actions) {
-			if (!(step.action in availableActions)) throw `Unknown action ${step.action}`;
+			if (typeof step.action !== 'function' && !(step.action in availableActions))
+				throw `Unknown action ${step.action}`;
 			if (isActionValid(step, this, ctx)) {
 				console.log(`starting processing of action step`, step);
-				const res = await availableActions[step.action](this, step.arg as never, ctx);
+				const res =
+					typeof step.action === 'function'
+						? await step.action(this, step.arg, ctx)
+						: await availableActions[step.action](this, step.arg as never, ctx);
 				console.log(`results are in`, res, res?.toString());
-				if (res && isAsyncGenerator(res)) {
+				if (res && isAsyncGenerator<Actions>(res)) {
 					console.log(`looping over the inner generator`);
 					for await (const inner of res) {
 						await this.resolveActions(inner, ctx);

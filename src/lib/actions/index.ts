@@ -1,4 +1,4 @@
-import { checkCondition, type Conditional } from '$lib/conditions';
+import { checkCondition, type Condition } from '$lib/conditions';
 import { messageAppend, messageClear, messageSet } from './conversation';
 import { flagSet, flagUnset } from './flags';
 import { locationChange, locationDesc, locationReturn } from './location';
@@ -63,11 +63,11 @@ export const actions = {
 
 export type ActionName = keyof typeof actions;
 
+export type ActionFn = (state: GameState) => void | Promise<void>;
 export interface Action {
-	action: ActionName;
+	action: ActionName | ((state: GameState, arg: unknown, ctx: ActionContext) => unknown);
 	arg?: unknown;
-	valid?: Conditional;
+	valid?: Condition;
 }
 
-export type ActionFn = (state: GameState) => void | Promise<void>;
 export type Actions = Action[] | ActionFn;

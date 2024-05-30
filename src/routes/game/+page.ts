@@ -1,8 +1,9 @@
-import { getGames } from '$lib/data/games';
 import type { PageLoad } from './$types';
+import { yearlings } from '$lib/games/yearlings';
+import { discovery } from '$lib/games/discovery';
 
 export const load: PageLoad = async function () {
 	return {
-		games: await getGames()
+		games: [yearlings, discovery]
 	};
 };
