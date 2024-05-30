@@ -200,7 +200,7 @@ const locations: Location[] = [
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/doomed-woods' }],
 				label: 'To Forest',
-				show: { condition: `levelAtLeast`, arg: 13 }
+				show: (s) => s.character.level >= 13
 			},
 			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
 		]
@@ -277,7 +277,7 @@ const locations: Location[] = [
 			{
 				label: 'Climb down',
 				actions: [{ action: 'encounterRandomNpc', arg: { table: ['yearlings/morlin'] } }],
-				show: { condition: 'flagIsSet', arg: 'found-rope' }
+				show: (s) => s.character.flags.has('found-rope')
 			},
 			{ label: 'Head back', actions: [{ action: 'locationChange', arg: 'yearlings/rocky-area' }] }
 		],
