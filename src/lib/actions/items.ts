@@ -38,27 +38,20 @@ export async function itemFind(
 	state: GameState,
 	{ item, takeActions }: { item: Item | string; takeActions: Action[] }
 ) {
-	return (async function* () {
-		if (typeof item === 'string') {
-			item = await getItem(item);
-		}
-		yield [
-			{ action: 'itemPush', arg: item },
-			{
-				action: 'choicesPush',
-				arg: [
-					{
-						label: 'Take it!',
-						actions: [
-							{ action: 'inventoryAdd', arg: item },
-							...takeActions,
-							{ action: 'choicesPop' },
-							{ action: 'itemPop' }
-						]
-					},
-					{ label: 'No Thanks...', actions: [{ action: 'choicesPop' }, { action: 'itemPop' }] }
-				]
-			}
-		] as Action[];
-	})();
+	if (typeof item === 'string') {
+		item = await getItem(item);
+	}
+	state.item.push(item);
+	state.choices.push([
+		{
+			label: 'Take it!',
+			actions: [
+				{ action: 'inventoryAdd', arg: item },
+				...takeActions,
+				{ action: 'choicesPop' },
+				{ action: 'itemPop' }
+			]
+		},
+		{ label: 'No Thanks...', actions: [{ action: 'choicesPop' }, { action: 'itemPop' }] }
+	]);
 }

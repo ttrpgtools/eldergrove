@@ -1,5 +1,6 @@
 import { locationReturn } from '$lib/actions/location';
 import type { Choice, GameDef, Location } from '$lib/types';
+import { encounterRandomNpc } from '../yearlings/encounter';
 
 const BACK = (label = 'Leave') => ({ label, actions: [{ action: locationReturn }] }) as Choice;
 
@@ -28,7 +29,7 @@ export const locations: Location[] = [
 		image: '/img/location/starting-beach.webp',
 		choices: [
 			{
-				actions: [{ action: 'encounterRandomNpc', arg: { table: ['crab', 'sandpiper'] } }],
+				actions: async (s) => await encounterRandomNpc(s, { table: ['crab', 'sandpiper'] }),
 				label: 'Explore'
 			},
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Into Town' }
@@ -67,7 +68,7 @@ export const locations: Location[] = [
 		image: '/img/location/good-field.webp',
 		choices: [
 			{
-				actions: [{ action: 'encounterRandomNpc', arg: { table: ['rat', 'scorpion'] } }],
+				actions: async (s) => await encounterRandomNpc(s, { table: ['rat', 'scorpion'] }),
 				label: 'Explore'
 			},
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Town' }

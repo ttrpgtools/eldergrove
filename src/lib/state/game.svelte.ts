@@ -13,6 +13,7 @@ import { getNpcManager, type NpcManager } from './npc.svelte';
 import { Stack } from './stack.svelte';
 import { isAsyncGenerator } from '$util/validate';
 import { EventEmitter } from '$util/events';
+import { evaluateDiceRoll } from '$util/dice';
 
 function makeContext(): ActionContext {
 	return {
@@ -33,6 +34,22 @@ class GameStateImpl {
 		this.character = character;
 		this.location = location;
 		this.npc = npc;
+	}
+
+	roll(formula: string) {
+		const rollContext: Record<string, number> = {
+			'@hp': this.character.hp,
+			'@maxhp': this.character.maxHp,
+			'@str': this.character.str,
+			'@dex': this.character.dex,
+			'@wil': this.character.wil,
+			'@armor': this.character.gear.torso?.type === 'armor' ? this.character.gear.torso.defence : 0
+		};
+		if (this.npc.current) {
+			rollContext['#maxhp'] = this.npc.current.maxHp;
+			rollContext['#hp'] = this.npc.current.hp;
+		}
+		return evaluateDiceRoll(formula, rollContext);
 	}
 
 	async resolveActions(actions: Actions, ctx?: ActionContext) {

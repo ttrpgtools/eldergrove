@@ -1,13 +1,13 @@
 import { getItem } from '$data/items';
-import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { rollFormula } from '$util/dice';
+import { minZero } from '$util/math';
 import { rollOnTable } from '$util/table';
 
-export async function npcDamage(state: GameState, amt: number | undefined, ctx: ActionContext) {
+export async function npcDamage(state: GameState, amt: number) {
 	if (state.npc.current) {
-		amt = amt ?? Math.max(0, ctx.rollResult ?? 0);
-		state.npc.current.hp = Math.max(0, state.npc.current.hp - amt);
+		amt = minZero(amt);
+		state.npc.current.hp = minZero(state.npc.current.hp - amt);
 		state.events.emit('npcHpChange', 0 - amt);
 	}
 }

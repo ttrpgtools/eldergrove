@@ -3,7 +3,6 @@ import { messageAppend, messageClear, messageSet } from './conversation';
 import { flagSet, flagUnset } from './flags';
 import { locationChange, locationDesc, locationReturn } from './location';
 import type { GameState } from '$state/game.svelte';
-import { encounterFinish, encounterRandomNpc } from './encounter';
 import { shopStart, shopFinish } from './shop';
 import { coinsAdd, coinsRemove } from './coins';
 import { choicesPop, choicesPush, yesno } from './choices';
@@ -13,7 +12,6 @@ import { counterDec, counterInc, counterReset } from './counters';
 import { hpDamage, hpHeal } from './hp';
 import { diceMinZero, diceRoll } from './dice';
 import { npcDamage, npcHeal, npcLoot } from './npc';
-import { attackFromCharacter, attackFromNpc } from './attacks';
 import { branch, wait } from './control';
 
 export function isActionValid(action: Action, gamestate: GameState, ctx: ActionContext) {
@@ -41,8 +39,6 @@ export const actions = {
 	inventoryRemove,
 	itemUse,
 	itemFind,
-	attackFromCharacter,
-	attackFromNpc,
 	locationChange,
 	locationReturn,
 	locationDesc,
@@ -52,8 +48,6 @@ export const actions = {
 	yesno,
 	coinsAdd,
 	coinsRemove,
-	encounterRandomNpc,
-	encounterFinish,
 	npcDamage,
 	npcHeal,
 	npcLoot,

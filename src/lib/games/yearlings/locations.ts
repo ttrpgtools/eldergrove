@@ -1,5 +1,8 @@
-import { locationReturn } from '$lib/actions/location';
+import { itemFind } from '$lib/actions/items';
+import { locationChange, locationReturn } from '$lib/actions/location';
+import { counterIsEqual } from '$lib/conditions/counters';
 import type { Choice, Location } from '$lib/types';
+import { encounterRandomNpc } from './encounter';
 
 const BACK = (label = 'Leave') => ({ label, actions: [{ action: locationReturn }] }) as Choice;
 
@@ -25,43 +28,32 @@ export const locations: Location[] = [
 		exit: [{ action: 'counterReset', arg: 'yearlings/grassy-field:wins' }],
 		choices: [
 			{
-				actions: [
-					{
-						action: 'encounterRandomNpc',
-						arg: {
-							table: [
-								'yearlings/rat',
-								'yearlings/imp',
-								'yearlings/fox',
-								'yearlings/mongoose',
-								'yearlings/wolf',
-								'yearlings/warlock',
-								'yearlings/goblin',
-								'yearlings/bear',
-								'yearlings/xas',
-								'yearlings/geist'
-							],
-							followBy: [
-								{
-									valid: { condition: 'flagIsNotSet', arg: 'found-rope' },
-									action: 'branch',
-									arg: {
-										on: { condition: 'counterIsEqual', arg: ['yearlings/grassy-field:wins', 1] },
-										isTrue: [
-											{
-												action: 'itemFind',
-												arg: {
-													item: 'yearlings/old-rope',
-													takeActions: [{ action: 'flagSet', arg: 'found-rope' }]
-												}
-											}
-										]
-									}
-								}
-							]
+				actions: (s) =>
+					encounterRandomNpc(s, {
+						table: [
+							'yearlings/rat',
+							'yearlings/imp',
+							'yearlings/fox',
+							'yearlings/mongoose',
+							'yearlings/wolf',
+							'yearlings/warlock',
+							'yearlings/goblin',
+							'yearlings/bear',
+							'yearlings/xas',
+							'yearlings/geist'
+						],
+						followBy: async (s) => {
+							if (
+								!s.character.flags.has('found-rope') &&
+								counterIsEqual(s, ['yearlings/grassy-field:wins', 1])
+							) {
+								await itemFind(s, {
+									item: 'yearlings/old-rope',
+									takeActions: [{ action: 'flagSet', arg: 'found-rope' }]
+								});
+							}
 						}
-					}
-				],
+					}),
 				label: 'Explore'
 			},
 			{
@@ -83,40 +75,30 @@ export const locations: Location[] = [
 		image: '/img/location/rocky-area.webp',
 		choices: [
 			{
-				actions: [
-					{
-						action: 'encounterRandomNpc',
-						arg: {
-							table: [
-								'yearlings/druid',
-								'yearlings/demon',
-								'yearlings/dactyl',
-								'yearlings/cyclops',
-								'yearlings/t-rex',
-								'yearlings/ogre',
-								'yearlings/troll',
-								'yearlings/sidewinder',
-								'yearlings/cave-monkey',
-								'yearlings/paramanthis'
-							],
-							followBy: [
-								{
-									valid: { condition: 'flagIsNotSet', arg: 'beat-morlin' },
-									action: 'branch',
-									arg: {
-										on: { condition: 'counterIsEqual', arg: ['yearlings/rocky-area:wins', 1] },
-										isTrue: [
-											{
-												action: 'locationChange',
-												arg: 'yearlings/morlin-cave'
-											}
-										]
-									}
-								}
-							]
+				actions: async (s) =>
+					await encounterRandomNpc(s, {
+						table: [
+							'yearlings/druid',
+							'yearlings/demon',
+							'yearlings/dactyl',
+							'yearlings/cyclops',
+							'yearlings/t-rex',
+							'yearlings/ogre',
+							'yearlings/troll',
+							'yearlings/sidewinder',
+							'yearlings/cave-monkey',
+							'yearlings/paramanthis'
+						],
+						followBy: async (s) => {
+							if (
+								!s.character.flags.has('beat-morlin') &&
+								counterIsEqual(s, ['yearlings/rocky-area:wins', 1])
+							) {
+								await locationChange(s, 'yearlings/morlin-cave');
+							}
 						}
-					}
-				],
+					}),
+
 				label: 'Explore'
 			},
 			{
@@ -147,7 +129,7 @@ export const locations: Location[] = [
 		choices: [
 			{
 				label: 'Climb down',
-				actions: [{ action: 'encounterRandomNpc', arg: { table: ['yearlings/morlin'] } }],
+				actions: async (s) => await encounterRandomNpc(s, { table: ['yearlings/morlin'] }),
 				show: (s) => s.character.flags.has('found-rope')
 			},
 			{ label: 'Head back', actions: [{ action: 'locationChange', arg: 'yearlings/rocky-area' }] }
@@ -293,7 +275,7 @@ export const locations: Location[] = [
 		image: '/img/location/doomed-woods.webp',
 		choices: [
 			{
-				actions: [{ action: 'encounterRandomNpc', arg: { table: ['yearlings/kamul'] } }],
+				actions: async (s) => await encounterRandomNpc(s, { table: ['yearlings/kamul'] }),
 				label: 'Explore'
 			},
 			{

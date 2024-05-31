@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { evaluateDiceRoll } from '$util/dice';
 	import Icon from '$ui/Icon.svelte';
 	import GearSlot from './GearSlot.svelte';
 	import Inventory from './Inventory.svelte';
@@ -7,6 +6,7 @@
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
+	import { hpHeal } from '$lib/actions/hp';
 	let { gamestate }: { gamestate: GameState } = $props();
 	const character = $derived(gamestate.character);
 	let inventoryOpen = $state(false);
@@ -46,11 +46,8 @@
 			<button
 				type="button"
 				class="nes-btn"
-				onclick={() =>
-					gamestate.resolveActions([
-						{ action: 'diceRoll', arg: '[@maxhp]-[@hp]' },
-						{ action: 'hpHeal' }
-					])}>Fill</button
+				onclick={() => hpHeal(gamestate, gamestate.character.maxHp - gamestate.character.hp)}
+				>Fill</button
 			>
 		</div>
 		<div class="col-span-3">
