@@ -1,12 +1,17 @@
-import { getNpcInstance } from '$data/npcs';
+import type { DataManager } from '$data/index';
 import type { NpcInstance } from '$lib/types';
 
 class NpcManagerImpl {
 	current: NpcInstance | undefined = $state();
+	#npcs: DataManager['npcs'];
+
+	constructor(npcs: DataManager['npcs']) {
+		this.#npcs = npcs;
+	}
 
 	async set(npc: string | NpcInstance) {
 		if (typeof npc === 'string') {
-			npc = await getNpcInstance(npc);
+			npc = await this.#npcs.get(npc);
 		}
 		this.current = npc;
 	}
@@ -22,9 +27,9 @@ export type NpcManager = NpcManagerImpl;
  * Singleton location manager.
  */
 let manager: NpcManager | undefined;
-export async function getNpcManager(): Promise<NpcManager> {
+export async function getNpcManager(npcs: DataManager['npcs']): Promise<NpcManager> {
 	if (!manager) {
-		manager = new NpcManagerImpl();
+		manager = new NpcManagerImpl(npcs);
 	}
 	return manager;
 }

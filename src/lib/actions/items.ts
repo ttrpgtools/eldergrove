@@ -1,4 +1,3 @@
-import { getItem } from '$data/items';
 import type { Item } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import type { Action } from '.';
@@ -39,7 +38,7 @@ export async function itemFind(
 	{ item, takeActions }: { item: Item | string; takeActions: Action[] }
 ) {
 	if (typeof item === 'string') {
-		item = await getItem(item);
+		item = await state.data.items.get(item);
 	}
 	state.item.push(item);
 	state.choices.push([

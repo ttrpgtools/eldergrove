@@ -1,4 +1,3 @@
-import { getNpcInstance } from '$data/npcs';
 import type { NpcInstance, RandomTable } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { npcLabel } from '$util/npc';
@@ -22,7 +21,7 @@ async function setNpc(npc: string | NpcInstance, state: GameState, followBy?: Ac
 		await state.resolveActions(state.npc.current.exit);
 	}
 	if (typeof npc === 'string') {
-		npc = await getNpcInstance(npc);
+		npc = await state.data.npcs.get(npc);
 	}
 	state.npc.set(npc);
 	state.choices.push([

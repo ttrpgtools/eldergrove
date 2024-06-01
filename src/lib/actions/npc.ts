@@ -1,4 +1,3 @@
-import { getItem } from '$data/items';
 import type { GameState } from '$state/game.svelte';
 import { rollFormula } from '$util/dice';
 import { minZero } from '$util/math';
@@ -27,7 +26,7 @@ export async function npcLoot(state: GameState) {
 		state.message.append(` You found ${coin} coins and earned ${npc.exp} experience.`);
 		if (npc.items) {
 			const itemId = rollOnTable(npc.items);
-			const item = await getItem(itemId[0]);
+			const item = await state.data.items.get(itemId[0]);
 			await state.character.addToInventory(item);
 			state.message.append(` You also found: ${item.name}.`);
 		}

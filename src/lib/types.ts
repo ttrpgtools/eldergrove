@@ -123,7 +123,7 @@ export interface GameEvents {
 	hpChange: number;
 }
 
-export interface GameDef extends Entity {
+export interface GameDef {
 	start: string;
 	baseChar: {
 		hp: number;
@@ -136,4 +136,8 @@ export interface GameDef extends Entity {
 		inventory: [string, number][];
 		equip: [string, keyof Gear][];
 	};
+	locations: Location[];
+	items: Item[];
+	npcTemplates: NpcTemplate[];
+	npcInstances: NpcInstance[];
 }

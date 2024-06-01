@@ -1,10 +1,9 @@
+import { BACK } from '$lib/actions/helpers';
 import { itemFind } from '$lib/actions/items';
-import { locationChange, locationReturn } from '$lib/actions/location';
+import { locationChange } from '$lib/actions/location';
 import { counterIsEqual } from '$lib/conditions/counters';
-import type { Choice, Location } from '$lib/types';
-import { encounterRandomNpc } from './encounter';
-
-const BACK = (label = 'Leave') => ({ label, actions: [{ action: locationReturn }] }) as Choice;
+import type { Location } from '$lib/types';
+import { encounterRandomNpc } from '../encounter';
 
 export const locations: Location[] = [
 	{

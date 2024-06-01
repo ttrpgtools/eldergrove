@@ -1,11 +1,14 @@
 import type { GameDef, Gear, InventoryItem, Item } from '$lib/types';
 import { evaluateDiceRoll, rollFormula } from '$util/dice';
-import { getItem } from '$data/items';
 import { defined } from '$util/array';
 import { Set, Map } from 'svelte/reactivity';
+import type { DataManager } from '$data/index';
 
-export async function createNewCharacter(baseChar: GameDef['baseChar']): Promise<Character> {
-	const newHero = new Character();
+export async function createNewCharacter(
+	baseChar: GameDef['baseChar'],
+	items: DataManager['items']
+): Promise<Character> {
+	const newHero = new Character(items);
 	newHero.maxHp = baseChar.hp;
 	newHero.hp = baseChar.hp;
 	newHero.coin = baseChar.coin;
@@ -28,6 +31,7 @@ const THRESHOLDS = [
 ];
 
 export class Character {
+	#items: DataManager['items'];
 	name = $state('Stranger');
 	hp = $state(10);
 	maxHp = $state(10);
@@ -46,6 +50,10 @@ export class Character {
 	);
 	flags = new Set<string>();
 	counters = new Map<string, number>();
+
+	constructor(items: DataManager['items']) {
+		this.#items = items;
+	}
 
 	takeDamage(amt: number) {
 		this.hp = Math.max(0, this.hp - amt);
@@ -94,7 +102,7 @@ export class Character {
 			return;
 		}
 		if (typeof item === 'string') {
-			item = await getItem(item);
+			item = await this.#items.get(item);
 		}
 		this.inventory.push({ item, quantity });
 	}
@@ -120,7 +128,7 @@ export class Character {
 
 	async equipItem(item: Item | string, where: keyof Gear) {
 		if (typeof item === 'string') {
-			item = await getItem(item);
+			item = await this.#items.get(item);
 		}
 		this.gear[where] = item;
 	}

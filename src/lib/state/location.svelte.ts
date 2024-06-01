@@ -1,11 +1,13 @@
-import { getLocation } from '$lib/data/locations';
 import type { Entity, Location } from '$lib/types';
-import { getBiome } from '$data/biomes';
+import type { DataManager } from '$data/index';
 
-async function getTopLocationNames(s: Location): Promise<string[]> {
+async function getTopLocationNames(
+	s: Location,
+	locations: DataManager['locations']
+): Promise<string[]> {
 	const names: string[] = [s.name];
 	while (s.parent) {
-		s = await getLocation(s.parent);
+		s = await locations.get(s.parent);
 		names.unshift(s.name);
 	}
 	return names;
@@ -20,8 +22,18 @@ class LocationManagerImpl {
 	biome: Entity = $state()!;
 	primary: string = $state()!;
 	secondary: string | undefined = $state();
+	#locations: DataManager['locations'];
+	#biomes: DataManager['biomes'];
 
-	constructor(starting: Location, names: string[], biome: Entity) {
+	constructor(
+		starting: Location,
+		names: string[],
+		biome: Entity,
+		locations: DataManager['locations'],
+		biomes: DataManager['biomes']
+	) {
+		this.#locations = locations;
+		this.#biomes = biomes;
 		this.#setLocation(starting, names, biome);
 	}
 
@@ -35,10 +47,10 @@ class LocationManagerImpl {
 
 	async moveTo(location: string | Location) {
 		if (typeof location === 'string') {
-			location = await getLocation(location);
+			location = await this.#locations.get(location);
 		}
-		const biome = await getBiome(location.biome);
-		const names = await getTopLocationNames(location);
+		const biome = await this.#biomes.get(location.biome);
+		const names = await getTopLocationNames(location, this.#locations);
 		this.#setLocation(location, names, biome);
 		return location;
 	}
@@ -56,13 +68,14 @@ const DEFAULT_STARTING_LOCATION = 'opening';
  */
 let manager: LocationManager | undefined;
 export async function getLocationManager(
+	data: DataManager,
 	starting = DEFAULT_STARTING_LOCATION
 ): Promise<LocationManager> {
 	if (!manager) {
-		const loc = await getLocation(starting);
-		const biome = await getBiome(loc.biome);
-		const names = await getTopLocationNames(loc);
-		manager = new LocationManagerImpl(loc, names, biome);
+		const loc = await data.locations.get(starting);
+		const biome = await data.biomes.get(loc.biome);
+		const names = await getTopLocationNames(loc, data.locations);
+		manager = new LocationManagerImpl(loc, names, biome, data.locations, data.biomes);
 	}
 	return manager;
 }

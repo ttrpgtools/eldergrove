@@ -1,6 +1,6 @@
 import type { Entity } from '$lib/types';
 
-const biomes: Entity[] = [
+export const biomes: Entity[] = [
 	{
 		id: 'meadow',
 		name: 'Sunny Meadow',
@@ -27,10 +27,3 @@ const biomes: Entity[] = [
 		image: '/img/biome/forest.webp'
 	}
 ];
-const biomeMap = new Map<string, Entity>(biomes.map((bio) => [bio.id, bio]));
-
-export function getBiome(id: string) {
-	const bio = biomeMap.get(id);
-	if (!bio) throw `Unknown biome ${id}`;
-	return Promise.resolve(bio);
-}

@@ -14,6 +14,8 @@ import { Stack } from './stack.svelte';
 import { isAsyncGenerator } from '$util/validate';
 import { EventEmitter } from '$util/events';
 import { evaluateDiceRoll } from '$util/dice';
+import { DataManager } from '$data/index';
+import { biomes } from '$data/biomes';
 
 function makeContext(): ActionContext {
 	return {
@@ -29,11 +31,13 @@ class GameStateImpl {
 	npc: NpcManager = $state()!;
 	item = new Stack<Item>();
 	events = new EventEmitter<GameEvents>();
+	data: DataManager;
 
-	constructor(character: Character, location: LocationManager, npc: NpcManager) {
+	constructor(character: Character, location: LocationManager, npc: NpcManager, data: DataManager) {
 		this.character = character;
 		this.location = location;
 		this.npc = npc;
+		this.data = data;
 	}
 
 	roll(formula: string) {
@@ -87,10 +91,17 @@ export type GameState = GameStateImpl;
 let state: GameState | undefined;
 export async function getGameState(game: GameDef): Promise<GameState> {
 	if (!state) {
-		const char = await createNewCharacter(game.baseChar);
-		const loc = await getLocationManager(game.start);
-		const npc = await getNpcManager();
-		state = new GameStateImpl(char, loc, npc);
+		const data = new DataManager();
+		data.items.add(game.items);
+		data.locations.add(game.locations);
+		data.npcs.addTemplate(game.npcTemplates);
+		data.npcs.addInstance(game.npcInstances);
+		data.biomes.add(biomes);
+		const char = await createNewCharacter(game.baseChar, data.items);
+		const loc = await getLocationManager(data, game.start);
+		const npc = await getNpcManager(data.npcs);
+		state = new GameStateImpl(char, loc, npc, data);
+
 		state.resolveActions([{ action: 'locationChange', arg: game.start }]);
 	}
 	return state;

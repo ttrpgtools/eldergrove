@@ -1,4 +1,3 @@
-import { getItem } from '$data/items';
 import type { Choice } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { resolveList } from '$util/async';
@@ -10,7 +9,11 @@ function noEncounter(state: GameState) {
 
 export async function shopStart(state: GameState, msg?: string) {
 	if (!state.location.current.shop) return noEncounter(state);
-	const fullshop = await resolveList(state.location.current.shop, 'item', getItem);
+	const fullshop = await resolveList(
+		state.location.current.shop,
+		'item',
+		state.data.items.get.bind(state.data.items)
+	);
 	const shopChoices: Choice[] = fullshop.map((inv) => ({
 		label: `${inv.item.name} (${inv.cost})`,
 		actions: [

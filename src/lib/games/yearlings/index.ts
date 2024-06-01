@@ -1,9 +1,9 @@
 import type { GameDef } from '$lib/types';
-export { locations } from './locations';
+import { items } from './items';
+import { locations } from './locations';
+import { npcInstances, npcTemplates } from './npcs';
 
 export const yearlings: GameDef = {
-	id: 'yearlings',
-	name: 'Yearlings',
 	start: 'yearlings/grassy-field',
 	baseChar: {
 		hp: 130,
@@ -16,8 +16,8 @@ export const yearlings: GameDef = {
 		inventory: [['yearlings/cure-potion', 5]],
 		equip: [['yearlings/rapier', 'right']]
 	},
-	desc: `
-  This is the OG game that inspired this game engine and while this isn't fully faithful to the
-  original version, it is pretty close. The images are new obviously.
-  `
+	locations,
+	items,
+	npcInstances,
+	npcTemplates
 };
