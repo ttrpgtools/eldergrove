@@ -1,3 +1,4 @@
+import { locationChange } from '$lib/actions/location';
 import type { NpcInstance, NpcTemplate } from '$lib/types';
 
 export const npcTemplates: NpcTemplate[] = [
@@ -193,18 +194,12 @@ export const npcInstances: NpcInstance[] = [
 		coins: `2d20`,
 		exp: 200,
 		items: ['yearlings/dragon-bane'],
-		exit: [
-			{
-				action: 'flagSet',
-				arg: 'beat-morlin',
-				valid: { condition: 'ctxWasVictory' }
-			},
-			{
-				action: 'locationChange',
-				arg: 'yearlings/rocky-area',
-				valid: { condition: 'ctxWasVictory' }
+		exit: async (s) => {
+			if (s.npc.status === 'win') {
+				s.character.flags.add('beat-morlin');
+				locationChange(s, 'yearlings/rocky-area');
 			}
-		],
+		},
 		desc: `A powerful wizard, gone a bit stir crazy alone in this cave for so long. Violently guards his collection of artifacts.`
 	},
 	{
@@ -214,6 +209,7 @@ export const npcInstances: NpcInstance[] = [
 		maxHp: 180,
 		hp: 180,
 		coins: 0,
-		exp: 0
+		exp: 0,
+		desc: `You get a chill just being near this creature of evil.`
 	}
 ];

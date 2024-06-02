@@ -10,7 +10,7 @@ async function setLocation(location: string | Location, state: GameState) {
 	}
 	console.log(`[setLoc] About to moveTo(${location})`);
 	await state.location.moveTo(location);
-	if (state.location.current.choices && state.location.current.choices.length) {
+	if (state.location.current.choices) {
 		state.choices.set(state.location.current.choices);
 	}
 	// yield to Enter actions

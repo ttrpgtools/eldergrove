@@ -3,7 +3,8 @@ import { itemFind } from '$lib/actions/items';
 import { locationChange } from '$lib/actions/location';
 import { counterIsEqual } from '$lib/conditions/counters';
 import type { Location } from '$lib/types';
-import { encounterRandomNpc } from '../encounter';
+import { randomFromArray } from '$util/random';
+import { bossEncounter, encounterFinish, encounterRandomNpc } from '../encounter';
 
 export const locations: Location[] = [
 	{
@@ -43,6 +44,16 @@ export const locations: Location[] = [
 						],
 						followBy: async (s) => {
 							if (
+								counterIsEqual(s, ['yearlings/grassy-field:wins', 1]) &&
+								s.character.getInventoryCount('yearlings/pendant') === 0 &&
+								!s.character.flags.has('returned-pendant')
+							) {
+								await itemFind(s, {
+									item: 'yearlings/pendant',
+									takeActions: []
+								});
+							} else if (
+								s.character.flags.has('returned-pendant') &&
 								!s.character.flags.has('found-rope') &&
 								counterIsEqual(s, ['yearlings/grassy-field:wins', 1])
 							) {
@@ -62,7 +73,7 @@ export const locations: Location[] = [
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/doomed-woods' }],
 				label: 'To Forest',
-				show: (s) => s.character.level >= 13
+				show: (s) => s.character.level >= 3
 			},
 			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
 		]
@@ -118,17 +129,27 @@ export const locations: Location[] = [
 		biome: 'rocky',
 		parent: 'yearlings/rocky-area',
 		image: '/img/location/morlin-cave.webp',
-		enter: [
-			{
-				action: 'messageSet',
-				arg: `It looks like you'll need some rope to get down into this place.`,
-				valid: { condition: 'flagIsNotSet', arg: 'found-rope' }
+		enter: (s) => {
+			if (!s.character.flags.has('found-rope')) {
+				s.message.set(`It looks like you'll need some rope to get down into this place.`);
 			}
-		],
+		},
 		choices: [
 			{
 				label: 'Climb down',
-				actions: async (s) => await encounterRandomNpc(s, { table: ['yearlings/morlin'] }),
+				actions: async (s) => {
+					if (s.character.getInventoryCount('yearlings/old-rope') > 0) {
+						s.message.set(
+							`Oh no!!! This rope is too weak and rotten to hold you! You plunge into the inky blackness of the cave! You land on a sharp spear of rock which thrusts itself through your frail carcass. Before you fall into eternal darkness, your last sight is of a dirty beard and two glowing eyes.`,
+							true
+						);
+						const youDie = await s.data.items.get('yearlings/you-die');
+						s.item.push(youDie);
+						s.choices.push([]);
+					} else {
+						await encounterRandomNpc(s, { table: ['yearlings/morlin'] });
+					}
+				},
 				show: (s) => s.character.flags.has('found-rope')
 			},
 			{ label: 'Head back', actions: [{ action: 'locationChange', arg: 'yearlings/rocky-area' }] }
@@ -263,8 +284,41 @@ export const locations: Location[] = [
 		biome: 'town',
 		image: '/img/location/fortune-teller.webp',
 		parent: 'yearlings/pylaim',
-		enter: [{ action: 'messageSet', arg: `Hello dearie!` }],
-		choices: [BACK()],
+		enter: (s) => {
+			let msg = randomFromArray([
+				`Enemies in the grassy field are easier than those in the rocky land.`,
+				`I can't find my magical pendant, I think I lost it somewhere in the field.`,
+				`An evil dragon named Kamul lurks in the forest nearby.`
+			]);
+			if (s.character.getInventoryCount('yearlings/pendant') > 0) {
+				msg = `Thank you so much for finding my pendant, to repay you I will tell you about the Dragon's Bane.
+					It is a mystical sword that is guarded by a wizard name Morlin in a cave not far from here.
+					Explore the rocky area to find it.`;
+			} else if (
+				s.character.getInventoryCount('yearlings/dragon-bane') > 0 ||
+				s.character.isEquipped('yearlings/dragon-bane')
+			) {
+				if (s.character.level < 13) {
+					msg = `Excellent you found the legendary sword! If I were you, I'd get to level 13 before even thinking about going into the Doomed Woods.`;
+				} else {
+					msg = `Now that you have the Dragon's Bane and are strong enough, you are unstoppable! GO - KILL KAMUL!!`;
+				}
+			} else if (s.character.flags.has('returned-pendant')) {
+				if (s.character.getInventoryCount('yearlings/rope') === 0) {
+					msg = `The general store stocks more than they sell.`;
+				} else {
+					msg = `Go! Find the sword and defeat the evil dragon Kamul!`;
+				}
+			}
+			s.message.set(`"${msg}"`);
+		},
+		exit: (s) => {
+			if (s.character.getInventoryCount('yearlings/pendant') > 0) {
+				s.character.removeFromInventory('yearlings/pendant');
+				s.character.flags.add('returned-pendant');
+			}
+		},
+		choices: [BACK('Leave tent')],
 		desc: `A mysterious woman in a mysterious tent. I'm sure this will be fine.`
 	},
 	{
@@ -274,7 +328,11 @@ export const locations: Location[] = [
 		image: '/img/location/doomed-woods.webp',
 		choices: [
 			{
-				actions: async (s) => await encounterRandomNpc(s, { table: ['yearlings/kamul'] }),
+				actions: async (s) =>
+					await bossEncounter(s, 'yearlings/kamul', async (s) => {
+						await encounterFinish(s, 'win');
+						await locationChange(s, 'yearlings/victory');
+					}),
 				label: 'Explore'
 			},
 			{
@@ -287,5 +345,17 @@ export const locations: Location[] = [
     but this place is undoubtedly creepy. The air is thick with evil and the trees
     wave menacingly at you.
     `
+	},
+	{
+		id: 'yearlings/victory',
+		name: 'You Win',
+		biome: 'forest',
+		image: '/img/location/yearlings-victory.webp',
+		choices: [
+			{ label: 'Game by:', actions: [] },
+			{ label: 'Colin Bate', actions: [] },
+			{ label: '1997-2024', actions: [] }
+		],
+		desc: `And with that final slash of the Dragon's Bane, the evil Kamul is no more. The forest around you seems to grow more vibrant and alive.`
 	}
 ];

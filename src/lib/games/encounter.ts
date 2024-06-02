@@ -1,4 +1,4 @@
-import type { NpcInstance, RandomTable } from '$lib/types';
+import type { Choice, NpcInstance, RandomTable } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { npcLabel } from '$util/npc';
 import { rollOnTable } from '$util/table';
@@ -16,7 +16,40 @@ function noEncounter(state: GameState) {
 	]);
 }
 
-async function setNpc(npc: string | NpcInstance, state: GameState, followBy?: Actions) {
+const attackAction =
+	(npc: NpcInstance, victoryFn: (gs: GameState) => void | Promise<void>) =>
+	async (s: GameState) => {
+		const result = await attackFromCharacter(s);
+		if (result) {
+			s.message.set(`You did ${result} damage to ${npcLabel(npc, true, false)}.`);
+		}
+		if (npcDead(s)) {
+			await victoryFn(s);
+		} else {
+			s.choices.push([]);
+			await wait(s, 1500);
+			const att = await attackFromNpc(s, npc);
+			if (att === 0) {
+				s.message.set(`${npcLabel(npc, true)} missed you!`);
+			} else if (att == null) {
+				// Handled by weapon effect
+			} else {
+				s.message.set(`${npcLabel(npc, true)} hit you for ${att} damage.`);
+			}
+			if (s.character.hp === 0) {
+				const youDie = await s.data.items.get('yearlings/you-die');
+				s.item.push(youDie);
+				s.choices.push([]);
+			}
+			s.choices.pop();
+		}
+	};
+
+async function setNpc(
+	npc: string | NpcInstance,
+	state: GameState,
+	choices: (x: NpcInstance) => Choice[]
+) {
 	if (state.npc.current && state.npc.current.exit) {
 		await state.resolveActions(state.npc.current.exit);
 	}
@@ -24,48 +57,7 @@ async function setNpc(npc: string | NpcInstance, state: GameState, followBy?: Ac
 		npc = await state.data.npcs.get(npc);
 	}
 	state.npc.set(npc);
-	state.choices.push([
-		{
-			label: 'Attack',
-			actions: async (s) => {
-				const result = await attackFromCharacter(s);
-				if (result) {
-					s.message.set(`You did ${result} damage to ${npcLabel(npc, true, false)}.`);
-				}
-				if (npcDead(s)) {
-					s.message.append(` You killed ${npcLabel(npc, true, false)}.`);
-					await npcLoot(s);
-					s.choices.push([
-						{
-							label: 'Leave',
-							actions: async (s) => {
-								s.choices.pop();
-								await encounterFinish(s, 'win', followBy);
-							}
-						}
-					]);
-				} else {
-					s.choices.push([]);
-					await wait(state, 1500);
-					const att = await attackFromNpc(s, npc);
-					if (att === 0) {
-						s.message.set(`${npcLabel(npc, true)} missed you!`);
-					} else if (att == null) {
-						// Handled by weapon effect
-					} else {
-						s.message.set(`${npcLabel(npc, true)} hit you for ${att} damage.`);
-					}
-					if (s.character.hp === 0) {
-						s.message.append(` You die.`);
-						s.choices.push([]);
-					}
-					s.choices.pop();
-				}
-			}
-		},
-		//{ label: 'Use Item'},
-		{ label: 'Run', actions: async (s) => await encounterFinish(s, 'run', followBy) }
-	]);
+	state.choices.push(choices(npc));
 	if (npc.enter) {
 		await state.resolveActions(npc.enter);
 	}
@@ -80,10 +72,42 @@ export async function encounterRandomNpc(
 	}
 	const results = rollOnTable(table);
 	if (results.length === 0) return noEncounter(state);
-	await setNpc(results[0], state, followBy);
+	await setNpc(results[0], state, (npc) => [
+		{
+			label: 'Attack',
+			actions: attackAction(npc, async (s) => {
+				s.message.append(` You killed ${npcLabel(npc, true, false)}.`);
+				await npcLoot(s);
+				s.choices.push([
+					{
+						label: 'Leave',
+						actions: async (s) => {
+							s.choices.pop();
+							await encounterFinish(s, 'win', followBy);
+						}
+					}
+				]);
+			})
+		},
+		//{ label: 'Use Item'},
+		{ label: 'Run', actions: async (s) => await encounterFinish(s, 'run', followBy) }
+	]);
 }
 
-async function encounterFinish(state: GameState, result: string, next?: Actions) {
+export async function bossEncounter(
+	state: GameState,
+	boss: string,
+	victoryFn: (x: GameState) => void | Promise<void>
+) {
+	await setNpc(boss, state, (npc) => [
+		{
+			label: 'Attack',
+			actions: attackAction(npc, victoryFn)
+		}
+	]);
+}
+
+export async function encounterFinish(state: GameState, result: 'win' | 'run', next?: Actions) {
 	if (state.npc.current) {
 		// TODO: Is this generic or provided per location via actions?
 		const streakKey = `${state.location.current.id}:wins`;
@@ -92,6 +116,7 @@ async function encounterFinish(state: GameState, result: string, next?: Actions)
 		} else {
 			await counterReset(state, streakKey);
 		}
+		state.npc.status = result;
 		state.choices.pop();
 		if (state.npc.current.exit) {
 			await state.resolveActions(state.npc.current.exit);

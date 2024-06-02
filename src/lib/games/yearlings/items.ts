@@ -16,6 +16,13 @@ export const items: Item[] = [
 		desc: `50ft of sturdy looking rope.`
 	},
 	{
+		type: 'trinket',
+		id: 'yearlings/pendant',
+		name: 'Pendant',
+		image: '/img/item/pendant-in-grass.webp',
+		desc: 'A pendant you found in the grass.'
+	},
+	{
 		type: 'consumable',
 		id: 'yearlings/cure-potion',
 		name: 'Cure Potion',
@@ -145,5 +152,12 @@ export const items: Item[] = [
 		defence: 18,
 		where: 'torso',
 		desc: `I think we all know that calling this armor is being generous. But it was what you washed up with.`
+	},
+	{
+		type: 'trinket',
+		id: 'yearlings/you-die',
+		name: 'You Die',
+		image: '/img/item/you-die.webp',
+		desc: `Everyone has to go sometime, and your time is now.`
 	}
 ];
