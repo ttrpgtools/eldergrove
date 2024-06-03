@@ -210,6 +210,7 @@ export const npcInstances: NpcInstance[] = [
 		hp: 180,
 		coins: 0,
 		exp: 0,
+		defend: (_, type, dmg) => (type === 'dragon' ? dmg : 0),
 		desc: `You get a chill just being near this creature of evil.`
 	}
 ];

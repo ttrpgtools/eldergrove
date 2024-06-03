@@ -49,6 +49,8 @@
 				onclick={() => hpHeal(gamestate, gamestate.character.maxHp - gamestate.character.hp)}
 				>Fill</button
 			>
+			<button type="button" class="nes-btn is-error" onclick={() => gamestate.reset()}>Reset</button
+			>
 		</div>
 		<div class="col-span-3">
 			<p class="nes-text is-primary my-2 text-xl">Equipped</p>

@@ -4,14 +4,16 @@ import { locations } from './locations';
 import { npcInstances, npcTemplates } from './npcs';
 
 export const yearlings: GameDef = {
+	id: 'yearlings',
 	start: 'yearlings/grassy-field',
 	baseChar: {
-		hp: 190,
+		name: 'Stranger',
+		maxHp: 190,
 		coin: 15000,
 		str: 24,
 		dex: 3,
 		wil: 3,
-		exp: 0,
+		xp: 0,
 		level: 1,
 		inventory: [['yearlings/cure-potion', 5]],
 		equip: [

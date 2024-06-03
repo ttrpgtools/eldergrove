@@ -32,11 +32,12 @@
 
 	let floatNpc: { label: string; color: string } | undefined = $state();
 	gamestate.events.on('npcHpChange', async (amt) => {
-		if (amt === 0) return;
 		floatNpc =
-			amt < 0
-				? { label: `${amt}`, color: 'text-red-500' }
-				: { label: `+${amt}`, color: 'text-emerald-500' };
+			amt === 0
+				? { label: 'MISS', color: 'text-black' }
+				: amt < 0
+					? { label: `${amt}`, color: 'text-red-500' }
+					: { label: `+${amt}`, color: 'text-emerald-500' };
 		await tick();
 		floatNpc = undefined;
 	});

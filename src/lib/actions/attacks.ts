@@ -7,8 +7,14 @@ import { npcDamage } from './npc';
 const NATURAL = `d[#maxhp]-0.5*([@armor]+[@dex])`;
 const UNARMED = `d4 + [@str]`;
 
-async function basicCharacterAttack(state: GameState, { amt }: { amt: string; type: string }) {
-	const value = state.roll(amt);
+async function basicCharacterAttack(
+	state: GameState,
+	{ amt, type }: { amt: string; type: string }
+) {
+	let value = state.roll(amt);
+	if (state.npc.current && state.npc.current.defend) {
+		value = state.npc.current.defend(state, type, value);
+	}
 	await npcDamage(state, value);
 	return value;
 }

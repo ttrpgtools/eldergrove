@@ -1,8 +1,10 @@
 import { BACK } from '$lib/actions/helpers';
+import { hpHeal } from '$lib/actions/hp';
 import { itemFind } from '$lib/actions/items';
 import { locationChange } from '$lib/actions/location';
 import { counterIsEqual } from '$lib/conditions/counters';
 import type { Location } from '$lib/types';
+import type { GameState } from '$state/game.svelte';
 import { randomFromArray } from '$util/random';
 import { bossEncounter, encounterFinish, encounterRandomNpc } from '../encounter';
 
@@ -172,13 +174,14 @@ export const locations: Location[] = [
 				actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/general' }],
 				label: 'General'
 			},
+			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/inn' }], label: 'Inn' },
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/pylaim/teller' }],
 				label: 'Fortune Teller'
 			}
 		],
 		desc: `
-		You take a look around the town. You see weapon and armour shops plus a general store.
+		You take a look around the town. You see weapon and armour shops plus a general store and inn.
     On the other side of town you see a fortune tellers tent.
 		`
 	},
@@ -279,6 +282,49 @@ export const locations: Location[] = [
 		desc: `What'll it be?`
 	},
 	{
+		id: 'yearlings/pylaim/inn',
+		name: 'Inn',
+		biome: 'town',
+		image: '/img/location/inn-keeper.webp',
+		parent: 'yearlings/pylaim',
+		desc: `A warm cozy atmosphere greets you when you enter the inn. You are greeted by an innkeeper with kind eyes.`,
+		choices: [
+			{
+				label: 'Spend Night',
+				actions: [
+					{ action: 'messageSet', arg: `Costs 35 coins, ok?` },
+					{
+						action: 'yesno',
+						arg: {
+							yes: [
+								{ action: 'coinsRemove', arg: 35 },
+								{ action: (gs: GameState) => hpHeal(gs, gs.character.maxHp - gs.character.hp) }
+							],
+							no: []
+						}
+					}
+				]
+			},
+			{
+				label: 'Save Game',
+				actions: [
+					{ action: 'messageSet', arg: `Costs 5 coins, ok?` },
+					{
+						action: 'yesno',
+						arg: {
+							yes: [{ action: 'coinsRemove', arg: 5 }, { action: (gs: GameState) => gs.save() }],
+							no: []
+						}
+					}
+				]
+			},
+			{
+				label: 'Leave Inn',
+				actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }]
+			}
+		]
+	},
+	{
 		id: 'yearlings/pylaim/teller',
 		name: 'Fortune Teller',
 		biome: 'town',
@@ -329,10 +375,23 @@ export const locations: Location[] = [
 		choices: [
 			{
 				actions: async (s) =>
-					await bossEncounter(s, 'yearlings/kamul', async (s) => {
-						await encounterFinish(s, 'win');
-						await locationChange(s, 'yearlings/victory');
-					}),
+					await bossEncounter(
+						s,
+						'yearlings/kamul',
+						async (s) => {
+							await encounterFinish(s, 'win');
+							await locationChange(s, 'yearlings/victory');
+						},
+						(s) => {
+							if (s.npc.current?.hp === s.npc.current?.maxHp) {
+								if (s.character.getInventoryCount('yearlings/dragon-bane') > 0) {
+									return `A powerful dragon-killing weapon doesn't work if it is still in your bag...`;
+								} else {
+									return `Maybe you should have asked around to find out if there was a way to damage this dragon...`;
+								}
+							}
+						}
+					),
 				label: 'Explore'
 			},
 			{

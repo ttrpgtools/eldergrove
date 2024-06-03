@@ -1,3 +1,4 @@
+import type { GameState } from '$state/game.svelte';
 import type { Actions } from './actions';
 import type { Condition } from './conditions';
 
@@ -90,6 +91,7 @@ export interface Experience extends AdvancedEntity {
 }
 export interface NpcTemplate extends Experience {
 	maxHp: number;
+	defend?: (s: GameState, type: string, dmg: number) => number;
 }
 
 export interface NpcInstance extends NpcTemplate {
@@ -123,19 +125,26 @@ export interface GameEvents {
 	hpChange: number;
 }
 
+export interface CharDef {
+	name: string;
+	hp?: number;
+	maxHp: number;
+	coin: number;
+	str: number;
+	dex: number;
+	wil: number;
+	xp: number;
+	level: number;
+	inventory: [string, number][];
+	equip: [string, keyof Gear][];
+	flags?: string[];
+	counters?: [string, number][];
+}
+
 export interface GameDef {
+	id: string;
 	start: string;
-	baseChar: {
-		hp: number;
-		coin: number;
-		str: number;
-		dex: number;
-		wil: number;
-		exp: number;
-		level: number;
-		inventory: [string, number][];
-		equip: [string, keyof Gear][];
-	};
+	baseChar: CharDef;
 	locations: Location[];
 	items: Item[];
 	npcTemplates: NpcTemplate[];

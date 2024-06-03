@@ -99,9 +99,9 @@ export const items: Item[] = [
 		name: `Dragon's Bane`,
 		icon: '',
 		image: '/img/item/dragon-bane.webp',
-		damage: { amt: 'd(2*[@str]+66)', type: 'stabbing' },
+		damage: { amt: 'd(2*[@str]+66)', type: 'dragon' },
 		where: 'hand',
-		desc: `Simple, sharp and not rusty. Nice.`
+		desc: `Large, but easy to weild. Complex runes run down the blade, supposedly they glow in the presence of dragons.`
 	},
 	{
 		type: 'armor',

@@ -17,7 +17,11 @@ function noEncounter(state: GameState) {
 }
 
 const attackAction =
-	(npc: NpcInstance, victoryFn: (gs: GameState) => void | Promise<void>) =>
+	(
+		npc: NpcInstance,
+		victoryFn: (gs: GameState) => void | Promise<void>,
+		deathMsg?: string | ((gs: GameState) => string | undefined)
+	) =>
 	async (s: GameState) => {
 		const result = await attackFromCharacter(s);
 		if (result) {
@@ -39,6 +43,12 @@ const attackAction =
 			if (s.character.hp === 0) {
 				const youDie = await s.data.items.get('yearlings/you-die');
 				s.item.push(youDie);
+				if (deathMsg) {
+					if (typeof deathMsg === 'function') {
+						deathMsg = deathMsg(s);
+					}
+					if (deathMsg) s.message.set(deathMsg);
+				}
 				s.choices.push([]);
 			}
 			s.choices.pop();
@@ -97,12 +107,13 @@ export async function encounterRandomNpc(
 export async function bossEncounter(
 	state: GameState,
 	boss: string,
-	victoryFn: (x: GameState) => void | Promise<void>
+	victoryFn: (x: GameState) => void | Promise<void>,
+	deathMsg?: string | ((gs: GameState) => string | undefined)
 ) {
 	await setNpc(boss, state, (npc) => [
 		{
 			label: 'Attack',
-			actions: attackAction(npc, victoryFn)
+			actions: attackAction(npc, victoryFn, deathMsg)
 		}
 	]);
 }

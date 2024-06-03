@@ -3,7 +3,8 @@ import {
 	type Choice,
 	type GameDef,
 	type ActionContext,
-	type GameEvents
+	type GameEvents,
+	type CharDef
 } from '$lib/types';
 import { actions as availableActions, isActionValid, type Actions } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
@@ -16,6 +17,7 @@ import { EventEmitter } from '$util/events';
 import { evaluateDiceRoll } from '$util/dice';
 import { DataManager } from '$data/index';
 import { biomes } from '$data/biomes';
+import { browser } from '$app/environment';
 
 function makeContext(): ActionContext {
 	return {
@@ -33,7 +35,13 @@ class GameStateImpl {
 	events = new EventEmitter<GameEvents>();
 	data: DataManager;
 
-	constructor(character: Character, location: LocationManager, npc: NpcManager, data: DataManager) {
+	constructor(
+		public id: string,
+		character: Character,
+		location: LocationManager,
+		npc: NpcManager,
+		data: DataManager
+	) {
 		this.character = character;
 		this.location = location;
 		this.npc = npc;
@@ -54,6 +62,21 @@ class GameStateImpl {
 			rollContext['#hp'] = this.npc.current.hp;
 		}
 		return evaluateDiceRoll(formula, rollContext);
+	}
+
+	toJSON() {
+		return {
+			character: this.character.toJSON(),
+			location: this.location.current.id
+		};
+	}
+
+	async save() {
+		localStorage.setItem(`gameSave:${this.id}`, JSON.stringify(this));
+	}
+	async reset() {
+		localStorage.removeItem(`gameSave:${this.id}`);
+		window.location.reload();
 	}
 
 	async resolveActions(actions: Actions, ctx?: ActionContext) {
@@ -97,10 +120,19 @@ export async function getGameState(game: GameDef): Promise<GameState> {
 		data.npcs.addTemplate(game.npcTemplates);
 		data.npcs.addInstance(game.npcInstances);
 		data.biomes.add(biomes);
+
+		if (browser) {
+			const saved = localStorage.getItem(`gameSave:${game.id}`) || 'null';
+			const savedChar = JSON.parse(saved) as { character: CharDef; location: string };
+			if (savedChar) {
+				game.baseChar = savedChar.character;
+				game.start = savedChar.location;
+			}
+		}
 		const char = await createNewCharacter(game.baseChar, data.items);
 		const loc = await getLocationManager(data, game.start);
 		const npc = await getNpcManager(data.npcs);
-		state = new GameStateImpl(char, loc, npc, data);
+		state = new GameStateImpl(game.id, char, loc, npc, data);
 
 		state.resolveActions([{ action: 'locationChange', arg: game.start }]);
 	}

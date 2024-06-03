@@ -1,27 +1,38 @@
-import type { GameDef, Gear, InventoryItem, Item } from '$lib/types';
+import type { CharDef, Gear, InventoryItem, Item } from '$lib/types';
 import { evaluateDiceRoll, rollFormula } from '$util/dice';
 import { defined } from '$util/array';
 import { Set, Map } from 'svelte/reactivity';
 import type { DataManager } from '$data/index';
 
 export async function createNewCharacter(
-	baseChar: GameDef['baseChar'],
+	baseChar: CharDef,
 	items: DataManager['items']
 ): Promise<Character> {
 	const newHero = new Character(items);
-	newHero.maxHp = baseChar.hp;
-	newHero.hp = baseChar.hp;
+	newHero.name = baseChar.name;
+	newHero.maxHp = baseChar.maxHp;
+	newHero.hp = baseChar.hp ?? baseChar.maxHp;
 	newHero.coin = baseChar.coin;
 	newHero.str = baseChar.str;
 	newHero.dex = baseChar.dex;
 	newHero.wil = baseChar.wil;
-	newHero.xp = baseChar.exp;
+	newHero.xp = baseChar.xp;
 	newHero.level = baseChar.level;
 	for await (const item of baseChar.equip) {
 		await newHero.equipItem(item[0], item[1]);
 	}
 	for await (const item of baseChar.inventory) {
 		await newHero.addToInventory(item[0], item[1]);
+	}
+	if (baseChar.flags) {
+		for (const flag of baseChar.flags) {
+			newHero.flags.add(flag);
+		}
+	}
+	if (baseChar.counters) {
+		for (const [k, v] of baseChar.counters) {
+			newHero.counters.set(k, v);
+		}
 	}
 	return newHero;
 }
@@ -32,7 +43,7 @@ const THRESHOLDS = [
 
 export class Character {
 	#items: DataManager['items'];
-	name = $state('Stranger');
+	name = $state('');
 	hp = $state(10);
 	maxHp = $state(10);
 	coin = $state(30);
@@ -53,6 +64,24 @@ export class Character {
 
 	constructor(items: DataManager['items']) {
 		this.#items = items;
+	}
+
+	toJSON() {
+		return {
+			name: this.name,
+			hp: this.hp,
+			maxHp: this.maxHp,
+			coin: this.coin,
+			xp: this.xp,
+			level: this.level,
+			str: this.str,
+			dex: this.dex,
+			wil: this.wil,
+			inventory: this.inventory.map((inv) => [inv.item.id, inv.quantity]),
+			equip: (Object.keys(this.gear) as (keyof Gear)[]).map((g) => [this.gear[g]?.id ?? '', g]),
+			flags: Array.from(this.flags),
+			counters: Array.from(this.counters)
+		} satisfies CharDef;
 	}
 
 	takeDamage(amt: number) {
