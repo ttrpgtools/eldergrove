@@ -7,9 +7,11 @@
 	import { fly } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { hpHeal } from '$lib/actions/hp';
+	import { konamiCode } from '$util/konami';
 	let { gamestate }: { gamestate: GameState } = $props();
 	const character = $derived(gamestate.character);
 	let inventoryOpen = $state(false);
+	let cheatmode = $state(false);
 	let fullHp = $derived(`${character.hp}/${character.maxHp}`);
 
 	let floatChar: { label: string; color: string } | undefined = $state();
@@ -24,6 +26,8 @@
 		floatChar = undefined;
 	});
 </script>
+
+<svelte:window onkeyup={konamiCode(() => (cheatmode = true))} />
 
 <div class="pixel-corners col-span-5 row-span-5 p-4">
 	<div class="grid grid-cols-3">
@@ -43,12 +47,12 @@
 		<div class="flex flex-col gap-2">
 			<button type="button" class="nes-btn" onclick={() => (inventoryOpen = true)}>Inventory</button
 			>
-			<button
-				type="button"
-				class="nes-btn"
-				onclick={() => hpHeal(gamestate, gamestate.character.maxHp - gamestate.character.hp)}
-				>Fill</button
-			>
+			{#if cheatmode}<button
+					type="button"
+					class="nes-btn"
+					onclick={() => hpHeal(gamestate, gamestate.character.maxHp - gamestate.character.hp)}
+					>Fill HP</button
+				>{/if}
 			<button type="button" class="nes-btn is-error" onclick={() => gamestate.reset()}>Reset</button
 			>
 		</div>
