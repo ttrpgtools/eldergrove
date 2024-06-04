@@ -46,7 +46,7 @@ export const locations: Location[] = [
 						],
 						followBy: async (s) => {
 							if (
-								counterIsEqual(s, ['yearlings/grassy-field:wins', 1]) &&
+								counterIsEqual(s, ['yearlings/grassy-field:wins', 3]) &&
 								s.character.getInventoryCount('yearlings/pendant') === 0 &&
 								!s.character.flags.has('returned-pendant')
 							) {
@@ -57,7 +57,7 @@ export const locations: Location[] = [
 							} else if (
 								s.character.flags.has('returned-pendant') &&
 								!s.character.flags.has('found-rope') &&
-								counterIsEqual(s, ['yearlings/grassy-field:wins', 1])
+								counterIsEqual(s, ['yearlings/grassy-field:wins', 3])
 							) {
 								await itemFind(s, {
 									item: 'yearlings/old-rope',
@@ -75,7 +75,7 @@ export const locations: Location[] = [
 			{
 				actions: [{ action: 'locationChange', arg: 'yearlings/doomed-woods' }],
 				label: 'To Forest',
-				show: (s) => s.character.level >= 3
+				show: (s) => s.character.level >= 13
 			},
 			{ actions: [{ action: 'locationChange', arg: 'yearlings/pylaim' }], label: 'Into Town' }
 		]
@@ -104,7 +104,7 @@ export const locations: Location[] = [
 						followBy: async (s) => {
 							if (
 								!s.character.flags.has('beat-morlin') &&
-								counterIsEqual(s, ['yearlings/rocky-area:wins', 1])
+								counterIsEqual(s, ['yearlings/rocky-area:wins', 3])
 							) {
 								await locationChange(s, 'yearlings/morlin-cave');
 							}
@@ -312,7 +312,14 @@ export const locations: Location[] = [
 					{
 						action: 'yesno',
 						arg: {
-							yes: [{ action: 'coinsRemove', arg: 5 }, { action: (gs: GameState) => gs.save() }],
+							yes: [
+								{ action: 'coinsRemove', arg: 5 },
+								{ action: (gs: GameState) => gs.save() },
+								{
+									action: 'messageSet',
+									arg: `A warm glow passes over you as your vitals are scanned. If you die, you will return here as you are now.`
+								}
+							],
 							no: []
 						}
 					}
