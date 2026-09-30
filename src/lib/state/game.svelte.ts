@@ -3,8 +3,7 @@ import {
 	type Choice,
 	type GameDef,
 	type ActionContext,
-	type GameEvents,
-	type CharDef
+	type GameEvents
 } from '$lib/types';
 import { actions as availableActions, isActionValid, type Actions } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
@@ -18,6 +17,7 @@ import { evaluateDiceRoll } from '$util/dice';
 import { DataManager } from '$data/index';
 import { biomes } from '$data/biomes';
 import { browser } from '$app/environment';
+import { parseCheckpoint, validateCheckpoint, SAVE_VERSION, type Checkpoint } from '$lib/saves';
 
 function makeContext(): ActionContext {
 	return {
@@ -34,18 +34,28 @@ class GameStateImpl {
 	item = new Stack<Item>();
 	events = new EventEmitter<GameEvents>();
 	data: DataManager;
+	saveNotice: string | undefined = $state();
+	#saveBlocked: boolean;
+	#storedCheckpoint: string | null;
+	#definition: GameDef;
 
 	constructor(
 		public id: string,
 		character: Character,
 		location: LocationManager,
 		npc: NpcManager,
-		data: DataManager
+		data: DataManager,
+		definition: GameDef,
+		storedCheckpoint: string | null,
+		saveBlocked: boolean
 	) {
 		this.character = character;
 		this.location = location;
 		this.npc = npc;
 		this.data = data;
+		this.#definition = definition;
+		this.#storedCheckpoint = storedCheckpoint;
+		this.#saveBlocked = saveBlocked;
 	}
 
 	roll(formula: string) {
@@ -64,19 +74,67 @@ class GameStateImpl {
 		return evaluateDiceRoll(formula, rollContext);
 	}
 
-	toJSON() {
+	toJSON(): Checkpoint {
 		return {
+			version: SAVE_VERSION,
+			adventureId: this.id,
+			contentVersion: this.#definition.contentVersion ?? 1,
 			character: this.character.toJSON(),
-			location: this.location.current.id
+			location: this.location.current.id,
+			previousLocation: this.location.previous?.id ?? null,
+			world: {
+				locations: this.data.locations.values.map((location) => ({
+					id: location.id,
+					desc: location.desc ?? null,
+					...(location.shop ? { stock: location.shop.map((entry) => entry.stock) } : {})
+				})),
+				npcs: this.data.npcs.instances.map((npc) => ({ id: npc.id, hp: npc.hp }))
+			}
 		};
 	}
 
-	async save() {
-		localStorage.setItem(`gameSave:${this.id}`, JSON.stringify(this));
+	/** Save a stable checkpoint; failure leaves the previous checkpoint intact. */
+	async save(): Promise<boolean> {
+		if (this.#saveBlocked) {
+			this.saveNotice ??=
+				'Saving is paused to protect the existing checkpoint. Reset this adventure to discard it.';
+			return false;
+		}
+		if (this.npc.current || this.item.current || this.character.hp === 0) {
+			this.saveNotice = 'Finish the encounter or item prompt before saving a living character.';
+			return false;
+		}
+		try {
+			if (!browser) throw new Error('Browser storage is unavailable.');
+			const storage = localStorage;
+			const key = `gameSave:${this.id}`;
+			if (storage.getItem(key) !== this.#storedCheckpoint) {
+				this.#saveBlocked = true;
+				this.saveNotice =
+					'The checkpoint changed in another session. Reload to load it, or reset to discard it.';
+				return false;
+			}
+			const checkpoint = validateCheckpoint(this.toJSON(), this.#definition);
+			const raw = JSON.stringify(checkpoint);
+			storage.setItem(key, raw);
+			this.#storedCheckpoint = raw;
+			this.saveNotice = undefined;
+			return true;
+		} catch {
+			this.saveNotice =
+				'The game could not save this checkpoint. Existing saved progress has been kept.';
+			return false;
+		}
 	}
 	async reset() {
-		localStorage.removeItem(`gameSave:${this.id}`);
-		window.location.reload();
+		try {
+			if (!browser) throw new Error('Browser storage is unavailable.');
+			localStorage.removeItem(`gameSave:${this.id}`);
+			window.location.reload();
+		} catch {
+			this.saveNotice =
+				'The checkpoint could not be removed. Try again when browser storage is available.';
+		}
 	}
 
 	async resolveActions(actions: Actions, ctx?: ActionContext) {
@@ -122,7 +180,9 @@ function copyDefinition<T>(value: T): T {
 
 /** Create an independent session without changing the adventure definition. */
 export async function createGameState(game: GameDef): Promise<GameState> {
-	const definition = copyDefinition(game);
+	// Share the session's proxies with its data collections and managers. Mutations
+	// through a manager must also be visible when snapshotting the persistent world.
+	const definition = $state(copyDefinition(game));
 	const data = new DataManager();
 	data.items.add(definition.items);
 	data.locations.add(definition.locations);
@@ -130,21 +190,50 @@ export async function createGameState(game: GameDef): Promise<GameState> {
 	data.npcs.addInstance(definition.npcInstances);
 	data.biomes.add(copyDefinition(biomes));
 
-	const saved = browser
-		? (JSON.parse(localStorage.getItem(`gameSave:${game.id}`) || 'null') as {
-				character: CharDef;
-				location: string;
-			} | null)
-		: null;
+	let saved: Checkpoint | undefined;
+	let storedCheckpoint: string | null = null;
+	let loadNotice: string | undefined;
+	if (browser) {
+		try {
+			storedCheckpoint = localStorage.getItem(`gameSave:${game.id}`);
+			if (storedCheckpoint !== null) saved = parseCheckpoint(storedCheckpoint, game);
+		} catch (error) {
+			const reason = error instanceof Error ? error.message : 'Browser storage is unavailable.';
+			loadNotice = `${reason} A new game is available; the existing checkpoint is protected until you reset this adventure.`;
+		}
+	}
+	if (saved) {
+		for (const entry of saved.world.locations) {
+			const location = await data.locations.get(entry.id);
+			location.desc = entry.desc ?? undefined;
+			entry.stock?.forEach((stock, index) => {
+				location.shop![index].stock = stock;
+			});
+		}
+		for (const entry of saved.world.npcs) {
+			(await data.npcs.get(entry.id)).hp = entry.hp;
+		}
+	}
 	const char = await createNewCharacter(saved?.character ?? definition.baseChar, data.items);
 	const loc = await createLocationManager(data, saved?.location ?? definition.start);
+	if (saved?.previousLocation) loc.previous = await data.locations.get(saved.previousLocation);
 	const npc = createNpcManager(data.npcs);
-	const state = new GameStateImpl(game.id, char, loc, npc, data);
+	const state = new GameStateImpl(
+		game.id,
+		char,
+		loc,
+		npc,
+		data,
+		game,
+		storedCheckpoint,
+		!!loadNotice
+	);
+	state.saveNotice = loadNotice;
 
 	// Initializing a scene is not travel: do not replay its exit actions or replace
 	// the previous location. Wait for entry hooks before the UI receives the state.
 	state.choices.set(loc.current.choices ?? []);
-	if (loc.current.enter) await state.resolveActions(loc.current.enter);
+	if (!saved && loc.current.enter) await state.resolveActions(loc.current.enter);
 	return state;
 }
 

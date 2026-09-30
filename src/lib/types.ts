@@ -143,6 +143,8 @@ export interface CharDef {
 
 export interface GameDef {
 	id: string;
+	/** Increment when content changes require a checkpoint migration. Defaults to 1. */
+	contentVersion?: number;
 	start: string;
 	baseChar: CharDef;
 	locations: Location[];

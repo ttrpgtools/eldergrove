@@ -78,7 +78,10 @@ export class Character {
 			dex: this.dex,
 			wil: this.wil,
 			inventory: this.inventory.map((inv) => [inv.item.id, inv.quantity]),
-			equip: (Object.keys(this.gear) as (keyof Gear)[]).map((g) => [this.gear[g]?.id ?? '', g]),
+			equip: (Object.keys(this.gear) as (keyof Gear)[]).flatMap((slot): [string, keyof Gear][] => {
+				const item = this.gear[slot];
+				return item ? [[item.id, slot]] : [];
+			}),
 			flags: Array.from(this.flags),
 			counters: Array.from(this.counters)
 		} satisfies CharDef;

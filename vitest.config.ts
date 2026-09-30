@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-	plugins: [svelte()],
+	// Exercise browser rune/proxy semantics even though the engine tests need no DOM.
+	plugins: [svelte({ dynamicCompileOptions: () => ({ generate: 'client' }) })],
 	resolve: {
 		conditions: ['browser'],
 		alias: {

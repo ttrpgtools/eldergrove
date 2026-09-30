@@ -9,6 +9,9 @@ import {
 
 class DataCollection<T extends Identifiable> {
 	#collection = new Map<string, T>();
+	get values(): T[] {
+		return [...this.#collection.values()];
+	}
 	add(items: T[]) {
 		items.forEach((x) => this.#collection.set(x.id, x));
 	}
@@ -23,6 +26,9 @@ class DataCollection<T extends Identifiable> {
 class TemplateDataCollection<TTemplate extends Identifiable, TInstance extends Identifiable> {
 	#templates = new Map<string, TTemplate>();
 	#instances = new Map<string, TInstance>();
+	get instances(): TInstance[] {
+		return [...this.#instances.values()];
+	}
 	#name: string;
 	#makeInstance: (tmpl: TTemplate) => TInstance;
 	constructor(name: string, makeInstance: (tmpl: TTemplate) => TInstance) {

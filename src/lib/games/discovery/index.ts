@@ -5,6 +5,7 @@ import { npcInstances, npcTemplates } from './npcs';
 
 export const discovery: GameDef = {
 	id: 'discovery',
+	contentVersion: 1,
 	start: 'opening',
 	baseChar: {
 		name: 'Stranger',

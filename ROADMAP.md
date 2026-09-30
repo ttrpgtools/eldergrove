@@ -36,12 +36,12 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 
 ## 3. Save correctness and recovery
 
-- [ ] Serialize only occupied equipment slots; unequipping currently saves an empty item ID that fails restoration.
-- [ ] Add a versioned save envelope, shape/range validation, content-version handling, and migrations as needed.
-- [ ] Recover gracefully from corrupt JSON, obsolete/missing entity IDs, unavailable storage, and write failures without silently destroying the existing save.
-- [ ] Define checkpoint semantics for NPC HP, world changes, shop stock, previous locations, and transient interactions. Currently only character and current location are saved.
-- [ ] Distinguish restoring a checkpoint from ordinary travel so restoration does not inadvertently replay exit/entry mechanics or reset counters.
-- [ ] Verify save/load round trips for equipment, inventory, flags, counters, and adventure isolation.
+- [x] Serialize only occupied equipment slots; unequipping previously saved an empty item ID that failed restoration.
+- [x] Add a versioned save envelope, shape/range validation, content-version handling, and migrations as needed.
+- [x] Recover gracefully from corrupt JSON, obsolete/missing entity IDs, unavailable storage, and write failures without silently destroying the existing save.
+- [x] Define checkpoint semantics for NPC HP, world changes, shop stock, previous locations, and transient interactions.
+- [x] Distinguish restoring a checkpoint from ordinary travel so restoration does not inadvertently replay exit/entry mechanics or reset counters.
+- [x] Verify save/load round trips for equipment, inventory, flags, counters, and adventure isolation.
 
 ## 4. Action ordering and command lifecycle
 
@@ -68,7 +68,7 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 ## 6. Immutable content and extensible rules
 
 - [ ] Formalize immutable adventure definitions and runtime world overrides. Session creation now recursively copies plain adventure data (retaining trusted function hooks) so sessions do not mutate imported definitions.
-- [ ] Define whether named NPCs persist damage between encounters; initialize their runtime state without mutating imported instances.
+- [x] Define whether named NPCs persist damage between encounters; initialize their runtime state without mutating imported instances. Named NPC HP persists in the session and checkpoints; random encounters are transient.
 - [ ] Move the Yearlings-specific death item out of shared encounters (`yearlings/you-die` currently breaks death in Discovery).
 - [ ] Make combat formulas, damage/defence handling, equipment rules, progression thresholds/stat gains, and encounter win streaks configurable rule modules.
 - [ ] Handle large XP rewards crossing multiple levels and clarify equality at progression thresholds and the maximum level.
@@ -125,3 +125,15 @@ Dependencies were absent during the original review. After the owner's `npm inst
 - Verification: `npm run check`, `npm test`, `npm run lint`, and `npm run build`. No development server, browser playthrough, Git history action, or deployment was performed. Browser visual/interaction verification is still pending.
 - Dependency audit: six low-severity package reports all stem from [GHSA-pxg6-pf52-xh8x](https://github.com/advisories/GHSA-pxg6-pf52-xh8x), the transitive `cookie <0.7.0` dependency in the latest stable SvelteKit. No moderate/high/critical findings were reported. npm suggests unsuitable downgrades; do not apply `npm audit fix --force`. Follow up with an upstream fix or a separately assessed/tested targeted override. The application currently has no custom cookie-writing endpoints.
 - Next engine priority: section 3, save correctness and recovery (especially empty equipment slots and corrupt saves).
+
+### 2026-09-30 — checkpoint correctness and recovery
+
+- Added version 1 checkpoints with adventure identity and an adventure `contentVersion` (default 1, explicitly set in Yearlings and Discovery). Validate shapes, safe integer ranges, entity references, equipment slots, duplicate entries, and shop layout before loading or writing. Content changes that invalidate checkpoints should increment `contentVersion`; incompatible versions are protected rather than guessed at. A future content-specific migration API remains part of extensibility work.
+- Migrate legacy character/location saves in memory, including removing empty equipment IDs left by unequipping. Legacy saves have no previous location or world snapshot, so those use initial defaults. Migration does not rewrite storage until a successful explicit save.
+- Checkpoints retain character equipment, inventory, flags, counters, current/previous locations, location descriptions, shop stock, and named NPC HP. Save only living characters outside active NPC encounters and item prompts. Choice confirmations, conversations, messages, random encounters, and interaction stacks are transient; restore normal location choices without replaying entry/exit actions. Arbitrary custom runtime fields are not yet persistent.
+- Corrupt/incompatible saves and storage read failures start a playable fresh session with a visible notice and block overwriting the original until explicit Reset. Write failures retain the existing checkpoint and allow retries. Detect a changed checkpoint from another session before overwriting it. Reset reports storage failures instead of reloading as though removal succeeded.
+- Yearlings' inn reports success only after a successful write and refunds its save fee on failure. Sufficient-funds rules remain in section 8.
+- Shared session proxies now keep location/NPC managers and data collections consistent, so mutations made during play appear in world snapshots. Engine tests compile with browser rune semantics to cover this behavior.
+- Verification includes legacy and versioned round trips, malformed saves, unavailable/quota-limited storage, concurrent-session protection, transient interactions, and successful/failed saves at the real Yearlings inn. Browser playthrough and visual verification remain pending; no development server was started.
+- Passed all 35 engine tests, `npm run check` (zero errors/warnings), `npm run lint`, `npm run build`, Svelte autofixer analysis, and `git diff --check`. Changes remain uncommitted.
+- Next engine priority: section 4, action ordering and command lifecycle.

@@ -5,6 +5,7 @@ import { npcInstances, npcTemplates } from './npcs';
 
 export const yearlings: GameDef = {
 	id: 'yearlings',
+	contentVersion: 1,
 	start: 'yearlings/grassy-field',
 	baseChar: {
 		name: 'Stranger',
