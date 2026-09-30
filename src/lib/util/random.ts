@@ -1,4 +1,4 @@
-let values: Uint32Array | undefined;
+let values: Uint32Array<ArrayBuffer> | undefined;
 const MAX = 512;
 let count = MAX;
 const LARGEST = 0x100000000;

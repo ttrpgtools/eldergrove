@@ -134,8 +134,7 @@ export function createMachine<
 
 	function invoke(event: Action, ...args: unknown[]): State {
 		const newState: TState | undefined = dispatch(event, state, ...args)?.valueOf() as
-			| TState
-			| undefined;
+			TState | undefined;
 		if ((typeof newState === 'string' || typeof newState === 'symbol') && newState !== state) {
 			transition(state, newState, event, args);
 		}

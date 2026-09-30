@@ -63,19 +63,12 @@ export type LocationManager = LocationManagerImpl;
 
 const DEFAULT_STARTING_LOCATION = 'opening';
 
-/**
- * Singleton location manager.
- */
-let manager: LocationManager | undefined;
-export async function getLocationManager(
+export async function createLocationManager(
 	data: DataManager,
 	starting = DEFAULT_STARTING_LOCATION
 ): Promise<LocationManager> {
-	if (!manager) {
-		const loc = await data.locations.get(starting);
-		const biome = await data.biomes.get(loc.biome);
-		const names = await getTopLocationNames(loc, data.locations);
-		manager = new LocationManagerImpl(loc, names, biome, data.locations, data.biomes);
-	}
-	return manager;
+	const loc = await data.locations.get(starting);
+	const biome = await data.biomes.get(loc.biome);
+	const names = await getTopLocationNames(loc, data.locations);
+	return new LocationManagerImpl(loc, names, biome, data.locations, data.biomes);
 }

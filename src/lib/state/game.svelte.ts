@@ -8,9 +8,9 @@ import {
 } from '$lib/types';
 import { actions as availableActions, isActionValid, type Actions } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
-import { getLocationManager, type LocationManager } from './location.svelte';
+import { createLocationManager, type LocationManager } from './location.svelte';
 import { Messanger } from './messanger.svelte';
-import { getNpcManager, type NpcManager } from './npc.svelte';
+import { createNpcManager, type NpcManager } from './npc.svelte';
 import { Stack } from './stack.svelte';
 import { isAsyncGenerator } from '$util/validate';
 import { EventEmitter } from '$util/events';
@@ -108,33 +108,62 @@ class GameStateImpl {
 
 export type GameState = GameStateImpl;
 
-/**
- * Singleton location manager.
- */
-let state: GameState | undefined;
-export async function getGameState(game: GameDef): Promise<GameState> {
-	if (!state) {
-		const data = new DataManager();
-		data.items.add(game.items);
-		data.locations.add(game.locations);
-		data.npcs.addTemplate(game.npcTemplates);
-		data.npcs.addInstance(game.npcInstances);
-		data.biomes.add(biomes);
-
-		if (browser) {
-			const saved = localStorage.getItem(`gameSave:${game.id}`) || 'null';
-			const savedChar = JSON.parse(saved) as { character: CharDef; location: string };
-			if (savedChar) {
-				game.baseChar = savedChar.character;
-				game.start = savedChar.location;
-			}
-		}
-		const char = await createNewCharacter(game.baseChar, data.items);
-		const loc = await getLocationManager(data, game.start);
-		const npc = await getNpcManager(data.npcs);
-		state = new GameStateImpl(game.id, char, loc, npc, data);
-
-		state.resolveActions([{ action: 'locationChange', arg: game.start }]);
+// Adventure definitions contain trusted function hooks, so structuredClone cannot
+// copy them. Copy plain data recursively while retaining those hooks by reference.
+function copyDefinition<T>(value: T): T {
+	if (Array.isArray(value)) return value.map(copyDefinition) as T;
+	if (value !== null && typeof value === 'object') {
+		return Object.fromEntries(
+			Object.entries(value).map(([key, entry]) => [key, copyDefinition(entry)])
+		) as T;
 	}
+	return value;
+}
+
+/** Create an independent session without changing the adventure definition. */
+export async function createGameState(game: GameDef): Promise<GameState> {
+	const definition = copyDefinition(game);
+	const data = new DataManager();
+	data.items.add(definition.items);
+	data.locations.add(definition.locations);
+	data.npcs.addTemplate(definition.npcTemplates);
+	data.npcs.addInstance(definition.npcInstances);
+	data.biomes.add(copyDefinition(biomes));
+
+	const saved = browser
+		? (JSON.parse(localStorage.getItem(`gameSave:${game.id}`) || 'null') as {
+				character: CharDef;
+				location: string;
+			} | null)
+		: null;
+	const char = await createNewCharacter(saved?.character ?? definition.baseChar, data.items);
+	const loc = await createLocationManager(data, saved?.location ?? definition.start);
+	const npc = createNpcManager(data.npcs);
+	const state = new GameStateImpl(game.id, char, loc, npc, data);
+
+	// Initializing a scene is not travel: do not replay its exit actions or replace
+	// the previous location. Wait for entry hooks before the UI receives the state.
+	state.choices.set(loc.current.choices ?? []);
+	if (loc.current.enter) await state.resolveActions(loc.current.enter);
 	return state;
+}
+
+// Keep unsaved progress when returning to an adventure in this browser session.
+// Cache initialization promises as well, so route preloads cannot create duplicates.
+// This cache is not UI state and intentionally does not trigger reactive updates.
+// eslint-disable-next-line svelte/prefer-svelte-reactivity
+const sessions = new Map<string, Promise<GameState>>();
+export async function getGameState(game: GameDef): Promise<GameState> {
+	if (!browser) return createGameState(game);
+	const existing = sessions.get(game.id);
+	if (existing) return existing;
+
+	const pending = createGameState(game);
+	sessions.set(game.id, pending);
+	try {
+		return await pending;
+	} catch (error) {
+		if (sessions.get(game.id) === pending) sessions.delete(game.id);
+		throw error;
+	}
 }

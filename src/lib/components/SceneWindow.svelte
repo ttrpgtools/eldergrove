@@ -31,15 +31,23 @@
 	}
 
 	let floatNpc: { label: string; color: string } | undefined = $state();
-	gamestate.events.on('npcHpChange', async (amt) => {
-		floatNpc =
-			amt === 0
-				? { label: 'MISS', color: 'text-black' }
-				: amt < 0
-					? { label: `${amt}`, color: 'text-red-500' }
-					: { label: `+${amt}`, color: 'text-emerald-500' };
-		await tick();
-		floatNpc = undefined;
+	$effect(() => {
+		let active = true;
+		const unsubscribe = gamestate.events.on('npcHpChange', async (amt) => {
+			if (!active) return;
+			floatNpc =
+				amt === 0
+					? { label: 'MISS', color: 'text-black' }
+					: amt < 0
+						? { label: `${amt}`, color: 'text-red-500' }
+						: { label: `+${amt}`, color: 'text-emerald-500' };
+			await tick();
+			if (active) floatNpc = undefined;
+		});
+		return () => {
+			active = false;
+			unsubscribe();
+		};
 	});
 </script>
 

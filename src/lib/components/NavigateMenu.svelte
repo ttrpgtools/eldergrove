@@ -18,6 +18,6 @@
 	);
 </script>
 
-{#each available as option}
+{#each available as option (option)}
 	<button type="button" class="nes-btn" onclick={() => onact(option)}>{option.label}</button>
 {/each}

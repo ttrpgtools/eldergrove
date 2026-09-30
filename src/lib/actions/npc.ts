@@ -20,7 +20,7 @@ export async function npcHeal(state: GameState, amt: number) {
 export async function npcLoot(state: GameState) {
 	if (state.npc.current) {
 		const npc = state.npc.current;
-		const coin = typeof npc.coins === 'string' ? rollFormula(npc.coins) : npc.coins ?? 0;
+		const coin = typeof npc.coins === 'string' ? rollFormula(npc.coins) : (npc.coins ?? 0);
 		state.character.coin += coin;
 		const leveled = state.character.gainExperience(npc.exp ?? 0);
 		state.message.append(` You found ${coin} coins and earned ${npc.exp} experience.`);

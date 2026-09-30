@@ -12,7 +12,7 @@
 		Eldergrove is a game engine/system that can host multiple stories. Choose your game/story.
 	</div>
 	<div class="grid w-full max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
-		{#each data.games as game}
+		{#each data.games as game (game.id)}
 			<div class="pixel-corners p-4">
 				<p class="nes-text is-primary mb-2 text-xl">{game.name}</p>
 				<p class="my-4">{game.desc}</p>

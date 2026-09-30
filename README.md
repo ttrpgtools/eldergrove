@@ -8,17 +8,16 @@ At the top level, I'm thinking something like:
 
 ```svelte
 <Game>
-  <AppMenu/>
+	<AppMenu />
 
-  <Character>
-
-  </Character>
+	<Character></Character>
 </Game>
 ```
 
 How much stuff in the URL?
 
 UI Modes
+
 - Viewing Map
 - Battle
 - NPC Conversation
@@ -29,7 +28,8 @@ UI Modes
   - Dungeon Room
 
 Game State
+
 - Active Location
   - With BG image
 - Current Scene
-- 
+-

@@ -26,13 +26,6 @@ class NpcManagerImpl {
 
 export type NpcManager = NpcManagerImpl;
 
-/**
- * Singleton location manager.
- */
-let manager: NpcManager | undefined;
-export async function getNpcManager(npcs: DataManager['npcs']): Promise<NpcManager> {
-	if (!manager) {
-		manager = new NpcManagerImpl(npcs);
-	}
-	return manager;
+export function createNpcManager(npcs: DataManager['npcs']): NpcManager {
+	return new NpcManagerImpl(npcs);
 }

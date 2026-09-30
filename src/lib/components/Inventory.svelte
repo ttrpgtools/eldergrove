@@ -17,13 +17,15 @@
 
 <Dialog.Root
 	bind:open
-	onOpenChange={(isOpen) => {
+	onOpenChange={() => {
 		shownItem = undefined;
 	}}
 >
 	<Dialog.Content>
 		<Dialog.Title>Inventory</Dialog.Title>
-		<Dialog.Description>
+		<Dialog.Description class="sr-only">Manage your equipment and carried items.</Dialog.Description
+		>
+		<div class="text-sm text-muted-foreground">
 			<div class="grid grid-cols-2 items-start gap-4">
 				<div class="grid grid-cols-[1fr_3rem] items-center gap-x-2 gap-y-4">
 					{#each character.equipped as gear (gear.id)}
@@ -63,6 +65,6 @@
 					{/if}
 				</div>
 			</div>
-		</Dialog.Description>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>

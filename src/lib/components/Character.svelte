@@ -15,15 +15,23 @@
 	let fullHp = $derived(`${character.hp}/${character.maxHp}`);
 
 	let floatChar: { label: string; color: string } | undefined = $state();
-	gamestate.events.on('hpChange', async (amt) => {
-		floatChar =
-			amt === 0
-				? { label: 'MISS', color: 'text-black' }
-				: amt < 0
-					? { label: `${amt}`, color: 'text-red-500' }
-					: { label: `+${amt}`, color: 'text-emerald-500' };
-		await tick();
-		floatChar = undefined;
+	$effect(() => {
+		let active = true;
+		const unsubscribe = gamestate.events.on('hpChange', async (amt) => {
+			if (!active) return;
+			floatChar =
+				amt === 0
+					? { label: 'MISS', color: 'text-black' }
+					: amt < 0
+						? { label: `${amt}`, color: 'text-red-500' }
+						: { label: `+${amt}`, color: 'text-emerald-500' };
+			await tick();
+			if (active) floatChar = undefined;
+		});
+		return () => {
+			active = false;
+			unsubscribe();
+		};
 	});
 </script>
 

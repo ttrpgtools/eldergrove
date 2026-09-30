@@ -6,7 +6,7 @@ async function setLocation(location: string | Location, state: GameState) {
 	// yield to Exit actions
 	if (state.location.current.exit) {
 		console.log(`[setLoc] About to yield exit actions for ${location}`);
-		state.resolveActions(state.location.current.exit);
+		await state.resolveActions(state.location.current.exit);
 	}
 	console.log(`[setLoc] About to moveTo(${location})`);
 	await state.location.moveTo(location);
@@ -16,7 +16,7 @@ async function setLocation(location: string | Location, state: GameState) {
 	// yield to Enter actions
 	if (state.location.current.enter) {
 		console.log(`[setLoc] About to yield enter actions for ${location}`);
-		state.resolveActions(state.location.current.enter);
+		await state.resolveActions(state.location.current.enter);
 	}
 }
 

@@ -1,7 +1,7 @@
 import type { CharDef, Gear, InventoryItem, Item } from '$lib/types';
 import { evaluateDiceRoll, rollFormula } from '$util/dice';
 import { defined } from '$util/array';
-import { Set, Map } from 'svelte/reactivity';
+import { SvelteSet, SvelteMap } from 'svelte/reactivity';
 import type { DataManager } from '$data/index';
 
 export async function createNewCharacter(
@@ -59,8 +59,8 @@ export class Character {
 			defined
 		)
 	);
-	flags = new Set<string>();
-	counters = new Map<string, number>();
+	flags = new SvelteSet<string>();
+	counters = new SvelteMap<string, number>();
 
 	constructor(items: DataManager['items']) {
 		this.#items = items;
@@ -166,7 +166,7 @@ export class Character {
 		console.log(`Auto equipping ${item?.name}`);
 		if (!item || (item.type !== 'armor' && item.type !== 'weapon')) return;
 		const attempted: (keyof Gear)[] = (
-			typeof item.where === 'string' ? [item.where] : item.where ?? []
+			typeof item.where === 'string' ? [item.where] : (item.where ?? [])
 		).flatMap((eq) => (eq === 'hand' ? ['right', 'left'] : eq));
 		if (attempted.length === 0) {
 			// TODO Auto infer from name?
