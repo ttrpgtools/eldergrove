@@ -7,6 +7,9 @@ import {
 	type Gear
 } from '$lib/types';
 import { checkCondition } from '$lib/conditions';
+import { assertAction } from '$lib/contracts';
+import { validateAdventure, type ContentDiagnostic } from '$lib/content';
+import type { RandomSource } from '$lib/util/dice';
 import { actions as availableActions, isActionValid, type Actions } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
 import { createLocationManager, type LocationManager } from './location.svelte';
@@ -47,6 +50,8 @@ class GameStateImpl {
 	#saveBlocked: boolean;
 	#storedCheckpoint: string | null;
 	#definition: GameDef;
+	#random: RandomSource | undefined;
+	contentDiagnostics: ContentDiagnostic[];
 
 	constructor(
 		public id: string,
@@ -56,7 +61,9 @@ class GameStateImpl {
 		data: DataManager,
 		definition: GameDef,
 		storedCheckpoint: string | null,
-		saveBlocked: boolean
+		saveBlocked: boolean,
+		contentDiagnostics: ContentDiagnostic[],
+		random?: RandomSource
 	) {
 		this.character = character;
 		this.location = location;
@@ -65,6 +72,8 @@ class GameStateImpl {
 		this.#definition = definition;
 		this.#storedCheckpoint = storedCheckpoint;
 		this.#saveBlocked = saveBlocked;
+		this.contentDiagnostics = contentDiagnostics;
+		this.#random = random;
 	}
 
 	roll(formula: string) {
@@ -80,7 +89,7 @@ class GameStateImpl {
 			rollContext['#maxhp'] = this.npc.current.maxHp;
 			rollContext['#hp'] = this.npc.current.hp;
 		}
-		return evaluateDiceRoll(formula, rollContext);
+		return evaluateDiceRoll(formula, rollContext, this.#random);
 	}
 
 	toJSON(): Checkpoint {
@@ -266,7 +275,8 @@ class GameStateImpl {
 				this.throwIfCommandCancelled();
 				return;
 			}
-			for (const step of actions) {
+			for (const [index, step] of actions.entries()) {
+				assertAction(step, `actions[${index}]`);
 				this.throwIfCommandCancelled();
 				if (typeof step.action !== 'function' && !(step.action in availableActions))
 					throw new Error(`Unknown action ${step.action}`);
@@ -303,7 +313,11 @@ function copyDefinition<T>(value: T): T {
 }
 
 /** Create an independent session without changing the adventure definition. */
-export async function createGameState(game: GameDef): Promise<GameState> {
+export async function createGameState(
+	game: GameDef,
+	options: { random?: RandomSource } = {}
+): Promise<GameState> {
+	const contentDiagnostics = validateAdventure(game);
 	// Share the session's proxies with its data collections and managers. Mutations
 	// through a manager must also be visible when snapshotting the persistent world.
 	const definition = $state(copyDefinition(game));
@@ -350,7 +364,9 @@ export async function createGameState(game: GameDef): Promise<GameState> {
 		data,
 		game,
 		storedCheckpoint,
-		!!loadNotice
+		!!loadNotice,
+		contentDiagnostics,
+		options.random
 	);
 	state.saveNotice = loadNotice;
 

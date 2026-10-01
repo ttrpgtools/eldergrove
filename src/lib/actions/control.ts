@@ -1,4 +1,4 @@
-import { checkCondition, type Conditional } from '$lib/conditions';
+import { checkCondition, type Condition } from '$lib/conditions';
 import type { GameState } from '$state/game.svelte';
 import type { Action } from '.';
 import type { ActionContext } from '$lib/types';
@@ -9,7 +9,7 @@ export async function wait(state: GameState, ms: number) {
 
 export async function branch(
 	state: GameState,
-	{ on, isFalse, isTrue }: { on: Conditional; isTrue: Action[]; isFalse?: Action[] },
+	{ on, isFalse, isTrue }: { on: Condition; isTrue: Action[]; isFalse?: Action[] },
 	ctx: ActionContext = state.actionContext
 ) {
 	return (async function* () {

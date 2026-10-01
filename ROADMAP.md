@@ -56,14 +56,14 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 
 ## 5. Typed actions and content validation
 
-- [ ] Replace optional `unknown` arguments with action-specific and condition-specific types (including extension registration).
-- [ ] Provide ergonomic authoring helpers that reject missing/wrong arguments at compile time.
-- [ ] Define explicit use of dice results in subsequent actions. Discovery's potion rolls dice then calls `hpHeal` without an amount, producing `NaN`.
-- [ ] Validate duplicate IDs, referenced locations/items/NPCs/biomes, parent cycles, and asset paths.
-- [ ] Validate dice syntax and bounds; unmatched parentheses can currently loop forever, and invalid/huge dice counts need bounded behavior.
-- [ ] Implement random-table `active` conditions or remove the unsupported field.
-- [ ] Use useful `Error` objects and author-facing diagnostics instead of thrown strings.
-- [ ] Add focused tests around the interpreter and content validation, with controllable randomness and timing.
+- [x] Replace optional `unknown` arguments with action-specific and condition-specific types (including extension registration).
+- [x] Provide ergonomic authoring helpers that reject missing/wrong arguments at compile time.
+- [x] Define explicit use of dice results in subsequent actions. Discovery's potion now heals using its dice result.
+- [x] Validate duplicate IDs, referenced locations/items/NPCs/biomes, parent cycles, and asset paths.
+- [x] Validate dice syntax and bounds, including unmatched parentheses and excessive dice counts.
+- [x] Implement random-table `active` conditions with game state and action context.
+- [x] Use useful `Error` objects and author-facing diagnostics instead of thrown strings.
+- [x] Add focused tests around the interpreter and content validation, with controllable randomness and timing.
 
 ## 6. Immutable content and extensible rules
 
@@ -72,7 +72,7 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 - [ ] Move the Yearlings-specific death item out of shared encounters (`yearlings/you-die` currently breaks death in Discovery).
 - [ ] Make combat formulas, damage/defence handling, equipment rules, progression thresholds/stat gains, and encounter win streaks configurable rule modules.
 - [ ] Handle large XP rewards crossing multiple levels and clarify equality at progression thresholds and the maximum level.
-- [ ] Register custom actions/conditions/rule hooks through a supported extension API instead of requiring core edits.
+- [ ] Register custom actions/conditions/rule hooks through a supported extension API instead of requiring core edits. Scoped action/condition registration is implemented in section 5; configurable rule hooks remain.
 - [ ] Preserve trusted TypeScript hooks while documenting that executable third-party adventures are code, not sandboxed data.
 
 ## 7. Interaction and UI/content boundary
@@ -101,7 +101,7 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 - [ ] Complete Discovery's missing locations and story (including the referenced `unknown-woods`). These are expected unfinished content, not blockers for the engine work.
 - [ ] Verify Discovery's mechanics as a second-engine-consumer regression case, even before its story is complete.
 - [ ] Play through Yearlings quests, death/retry, shops, Morlin, Kamul, and victory after engine changes.
-- [ ] Develop an authoring guide and a minimal example adventure to support new authors.
+- [ ] Develop an authoring guide and a minimal example adventure to support new authors. `AUTHORING.md` now documents contracts and extension examples; a complete example adventure/tutorial remains.
 - [ ] Build additional adventures separately from engine implementation.
 
 ## Review evidence and limits
@@ -149,3 +149,17 @@ Dependencies were absent during the original review. After the owner's `npm inst
 - Added 23 command regression tests covering deferred inventory lookup, duplicate/stale input, independent locks, failures, cancellation, branch/continuation context, equipment ownership/transfers, shop payments, combat rewards/retaliation, owned prompt cleanup, follow-up/exit-created encounters, and real Morlin exit travel. Browser playthrough remains pending; no development server was started.
 - Verification: all 58 tests passed, `npm run check` reported zero errors/warnings, and `npm run lint`, `npm run build`, and `git diff --check` passed. Svelte autofixer found no issues; its generic effect suggestions were reviewed and retained for lifecycle cleanup and existing event-driven HP animations. Changes remain uncommitted.
 - Next engine priority: section 5, typed actions and content validation. Broader interaction modes, generic death handling, item combat rules, stock enforcement, and equipment compatibility remain in their respective later sections.
+
+### 2026-09-30 — typed authoring and content validation
+
+- Built-in actions and conditions are discriminated unions derived from handler argument types. Required arguments, tuples, nested commands, and no-argument commands are checked by TypeScript. Runtime contracts also reject malformed dynamic commands/conditions before dispatch. Inline function actions remain supported with an undefined argument; parameterized extensions use typed registration helpers.
+- Added `action`, `condition`, `choice`, `defineAdventure`, and scoped `createAuthoring().registerAction/registerCondition` helpers. Parsers infer extension argument types and validate them during construction and execution. Namespaced registrations detect duplicates within a registry, with no global mutation across adventures. Registered actions support generator continuations; conditions must return booleans. Configurable rule modules/hooks remain section 6 work.
+- Numeric amounts explicitly accept `{ from: 'rollResult' }` (also exported as `rollResult`) and fail if the context has no preceding roll. Fixed the real Discovery potion; HP/NPC/currency actions reject non-finite amounts. `diceMinZero` now requires a roll too.
+- Replaced the permissive dice string evaluator with a bounded parser supporting arithmetic, parentheses, unary signs, dice, and named context. It rejects invalid syntax, unknown keys, invalid count/sides, excessive nesting/tokens/length, excessive total dice, and non-finite/oversized results. Limits and integer truncation semantics are documented in `AUTHORING.md`; no JavaScript evaluation is used. Session creation accepts an injected inclusive integer random source for deterministic tests, including combat and loot.
+- Session creation validates content before reading saves or initializing managers. Diagnostics cover duplicate IDs, NPC template/instance collisions, starting equipment/inventory, declarative nested action/condition references, NPC encounter/loot tables, shops, biomes, parent cycles, numeric fields, and asset paths. Trusted function bodies cannot be statically inspected; dynamic actions and ID lookups still report useful errors at execution.
+- Added declarative `encounterRandomNpc` authoring support and migrated Discovery's encounter choices to it. Its explicitly declared `unresolvedLocations: ['unknown-woods']` produces a warning without preventing the unfinished adventure from loading; it does not excuse invalid starting locations, parents, or unrelated missing references. Checkpoints still reject references to unavailable locations.
+- Implemented table `active` conditions using session/context. Inactive entries keep their original trigger ranges and do not reroll; no match returns an empty result, which encounter/loot consumers now handle. Consumers still use the first matching value; general multi-result loot behavior remains section 8 work.
+- `npm run validate:content` verifies both current adventures against actual files in `static`, and production builds run it first. Browser validation checks path syntax; external HTTP(S) URLs are not fetched. Added `AUTHORING.md` with API, validation, extension, randomness, and cancellation guidance.
+- Added 74 runtime tests plus compile-time contract assertions, covering real content/assets, the Discovery potion, scoped extensions, dynamic malformed commands, missing IDs, cycles, table conditions, and bounded deterministic dice. Existing timer/cancellation tests continue to cover interpreter timing. Browser playthrough remains pending; no development server was started.
+- Verification: all 132 tests passed; `npm run check` reported zero errors/warnings; lint, content/asset checks, production build, Svelte autofixer analysis, and `git diff --check` passed. Changes remain uncommitted.
+- Next engine priority: section 6, immutable content and extensible rules.

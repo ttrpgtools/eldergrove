@@ -9,8 +9,10 @@ import { hpFull, hpIs } from './hp';
 import { inventoryContains } from './items';
 import { levelAtLeast } from './level';
 import { npcDead, npcNotDead } from './npc';
+import type { ArgumentField } from '$lib/arguments';
+import { assertCondition } from '$lib/contracts';
 
-const conditions = {
+export const conditions = {
 	flagIsSet,
 	flagIsNotSet,
 	counterIsEqual,
@@ -28,18 +30,24 @@ const conditions = {
 } as const;
 
 export type ConditionName = keyof typeof conditions;
-export interface Conditional {
-	condition: ConditionName;
-	arg?: unknown;
-	not?: boolean;
-}
-export type ConditionFn = (state: GameState) => boolean;
+export type ConditionArgs = {
+	[K in ConditionName]: Parameters<(typeof conditions)[K]> extends [GameState, ...infer Rest]
+		? Rest extends []
+			? never
+			: Rest[0]
+		: never;
+};
+export type Conditional = {
+	[K in ConditionName]: { condition: K; not?: boolean } & ArgumentField<ConditionArgs[K]>;
+}[ConditionName];
+export type ConditionFn = (state: GameState, ctx?: ActionContext) => boolean;
 export type Condition = Conditional | ConditionFn;
 export function checkCondition(when: Condition, state: GameState, ctx?: ActionContext) {
+	assertCondition(when);
 	if (typeof when === 'function') {
-		return when(state);
+		return when(state, ctx);
 	}
-	if (!(when.condition in conditions)) throw `Unknown condition ${when.condition}`;
+	if (!(when.condition in conditions)) throw new Error(`Unknown condition ${when.condition}`);
 	const fn = conditions[when.condition];
 	const result = fn(state, when.arg as never, ctx); // ugh.
 	return when.not === true ? !result : result;

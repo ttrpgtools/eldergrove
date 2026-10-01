@@ -85,7 +85,7 @@ export async function encounterRandomNpc(
 	{ table, followBy }: { table?: string[] | RandomTable<string>; followBy?: Actions }
 ) {
 	if (!table) return noEncounter(state);
-	const results = rollOnTable(table);
+	const results = rollOnTable(table, { state, ctx: state.actionContext });
 	if (results.length === 0) return noEncounter(state);
 	await setNpc(results[0], state, (npc, revision) => [
 		{

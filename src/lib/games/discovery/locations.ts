@@ -1,6 +1,5 @@
 import { BACK } from '$lib/actions/helpers';
 import type { Location } from '$lib/types';
-import { encounterRandomNpc } from '../encounter';
 
 export const locations: Location[] = [
 	{
@@ -27,7 +26,7 @@ export const locations: Location[] = [
 		image: '/img/location/starting-beach.webp',
 		choices: [
 			{
-				actions: async (s) => await encounterRandomNpc(s, { table: ['crab', 'sandpiper'] }),
+				actions: [{ action: 'encounterRandomNpc', arg: { table: ['crab', 'sandpiper'] } }],
 				label: 'Explore'
 			},
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Into Town' }
@@ -66,7 +65,7 @@ export const locations: Location[] = [
 		image: '/img/location/good-field.webp',
 		choices: [
 			{
-				actions: async (s) => await encounterRandomNpc(s, { table: ['rat', 'scorpion'] }),
+				actions: [{ action: 'encounterRandomNpc', arg: { table: ['rat', 'scorpion'] } }],
 				label: 'Explore'
 			},
 			{ actions: [{ action: 'locationChange', arg: 'pylaim' }], label: 'Town' }

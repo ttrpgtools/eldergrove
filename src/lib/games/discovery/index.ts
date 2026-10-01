@@ -7,6 +7,7 @@ export const discovery: GameDef = {
 	id: 'discovery',
 	contentVersion: 1,
 	start: 'opening',
+	unresolvedLocations: ['unknown-woods'],
 	baseChar: {
 		name: 'Stranger',
 		maxHp: 10,

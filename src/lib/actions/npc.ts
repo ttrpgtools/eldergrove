@@ -1,9 +1,15 @@
+import { resolveNumber, type NumericValue } from '$lib/arguments';
+import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
-import { rollFormula } from '$util/dice';
 import { minZero } from '$util/math';
 import { rollOnTable } from '$util/table';
 
-export async function npcDamage(state: GameState, amt: number) {
+export async function npcDamage(
+	state: GameState,
+	value: NumericValue,
+	ctx: ActionContext = state.actionContext
+) {
+	let amt = resolveNumber(value, ctx);
 	if (state.npc.current) {
 		amt = minZero(amt);
 		state.npc.current.hp = minZero(state.npc.current.hp - amt);
@@ -11,24 +17,32 @@ export async function npcDamage(state: GameState, amt: number) {
 	}
 }
 
-export async function npcHeal(state: GameState, amt: number) {
+export async function npcHeal(
+	state: GameState,
+	value: NumericValue,
+	ctx: ActionContext = state.actionContext
+) {
+	const amt = resolveNumber(value, ctx);
 	if (state.npc.current) {
-		state.npc.current.hp = Math.min(state.npc.current.maxHp, state.npc.current.hp + (amt ?? 0));
+		state.npc.current.hp = Math.min(state.npc.current.maxHp, state.npc.current.hp + amt);
 	}
 }
 
 export async function npcLoot(state: GameState) {
 	if (state.npc.current) {
 		const npc = state.npc.current;
-		const coin = typeof npc.coins === 'string' ? rollFormula(npc.coins) : (npc.coins ?? 0);
+		const coin = typeof npc.coins === 'string' ? state.roll(npc.coins) : (npc.coins ?? 0);
 		state.character.coin += coin;
 		const leveled = state.character.gainExperience(npc.exp ?? 0);
 		state.message.append(` You found ${coin} coins and earned ${npc.exp} experience.`);
 		if (npc.items) {
-			const itemId = rollOnTable(npc.items);
-			const item = await state.data.items.get(itemId[0]);
-			await state.character.addToInventory(item);
-			state.message.append(` You also found: ${item.name}.`);
+			const itemId = rollOnTable(npc.items, { state, ctx: state.actionContext });
+			// No matching/active loot entry is a valid empty result. Multi-result handling is separate.
+			if (itemId[0] !== undefined) {
+				const item = await state.data.items.get(itemId[0]);
+				await state.character.addToInventory(item);
+				state.message.append(` You also found: ${item.name}.`);
+			}
 		}
 		if (leveled) {
 			state.message.append(` You leveled up!`);

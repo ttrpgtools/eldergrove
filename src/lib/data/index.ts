@@ -18,7 +18,7 @@ class DataCollection<T extends Identifiable> {
 
 	async get(id: string): Promise<T> {
 		const item = this.#collection.get(id);
-		if (!item) throw `Unknown ${id}`;
+		if (!item) throw new Error(`Unknown entity ID: ${id}`);
 		return Promise.resolve(item);
 	}
 }
@@ -48,7 +48,7 @@ class TemplateDataCollection<TTemplate extends Identifiable, TInstance extends I
 		const instance = this.#instances.get(id);
 		if (instance) return Promise.resolve(instance);
 		const template = this.#templates.get(id);
-		if (!template) throw `Unknown ${this.#name} ${id}`;
+		if (!template) throw new Error(`Unknown ${this.#name} ID: ${id}`);
 		return Promise.resolve(this.#makeInstance(template));
 	}
 }

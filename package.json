@@ -4,7 +4,8 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev --port 5513",
-		"build": "vite build",
+		"build": "npm run validate:content && vite build",
+		"validate:content": "vitest run tests/content.test.ts",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

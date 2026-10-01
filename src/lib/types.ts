@@ -145,6 +145,8 @@ export interface GameDef {
 	id: string;
 	/** Increment when content changes require a checkpoint migration. Defaults to 1. */
 	contentVersion?: number;
+	/** Explicit unfinished destinations are warnings; other missing references are errors. */
+	unresolvedLocations?: string[];
 	start: string;
 	baseChar: CharDef;
 	locations: Location[];

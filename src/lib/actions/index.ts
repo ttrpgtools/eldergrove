@@ -13,6 +13,8 @@ import { hpDamage, hpHeal } from './hp';
 import { diceMinZero, diceRoll } from './dice';
 import { npcDamage, npcHeal, npcLoot } from './npc';
 import { branch, wait } from './control';
+import type { ArgumentField } from '$lib/arguments';
+import { encounterRandomNpc } from '$lib/games/encounter';
 
 export function isActionValid(action: Action, gamestate: GameState, ctx: ActionContext) {
 	if (action.valid == null) return true;
@@ -52,16 +54,27 @@ export const actions = {
 	npcHeal,
 	npcLoot,
 	shopStart,
-	shopFinish
+	shopFinish,
+	encounterRandomNpc
 } as const;
 
 export type ActionName = keyof typeof actions;
 
 export type ActionFn = (state: GameState, ctx: ActionContext) => void | Promise<void>;
-export interface Action {
-	action: ActionName | ((state: GameState, arg: unknown, ctx: ActionContext) => unknown);
-	arg?: unknown;
+export type ActionArgs = {
+	[K in ActionName]: Parameters<(typeof actions)[K]> extends [GameState, ...infer Rest]
+		? Rest extends []
+			? never
+			: Rest[0]
+		: never;
+};
+export type BuiltinAction = {
+	[K in ActionName]: { action: K; valid?: Condition } & ArgumentField<ActionArgs[K]>;
+}[ActionName];
+export type CustomAction = {
+	action: (state: GameState, arg: undefined, ctx: ActionContext) => unknown;
+	arg?: never;
 	valid?: Condition;
-}
-
+};
+export type Action = BuiltinAction | CustomAction;
 export type Actions = Action[] | ActionFn;
