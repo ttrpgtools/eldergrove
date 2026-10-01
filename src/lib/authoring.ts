@@ -1,3 +1,5 @@
+import { defineRuleModule, type RuleOverrides } from './rules';
+import { immutableSnapshot, type Immutable } from './definitions';
 import type { ActionArgs, ActionName, Actions, BuiltinAction, CustomAction } from './actions';
 import type {
 	ConditionArgs,
@@ -30,8 +32,8 @@ export function condition<K extends ConditionName>(
 export function choice(label: string, actions: Actions, show?: Condition): Choice {
 	return { label, actions, ...(show ? { show } : {}) };
 }
-export function defineAdventure<T extends GameDef>(game: T): T {
-	return game;
+export function defineAdventure<T extends GameDef>(game: T): Immutable<T> {
+	return immutableSnapshot(game);
 }
 
 export type ArgumentParser<T> = (value: unknown) => T;
@@ -60,6 +62,10 @@ export function createAuthoring() {
 		condition,
 		choice,
 		defineAdventure,
+		registerRules(name: string, rules: RuleOverrides) {
+			register('rule', name, (value) => value);
+			return defineRuleModule(name, rules);
+		},
 		registerAction<T>(
 			name: string,
 			definition: {

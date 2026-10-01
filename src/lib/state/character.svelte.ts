@@ -1,3 +1,5 @@
+import { DEFAULT_RULES, GEAR_SLOTS, validateGains, type GameRules } from '$lib/rules';
+import { integer } from '$lib/contracts';
 import type { CharDef, Gear, InventoryItem, Item } from '$lib/types';
 import { evaluateDiceRoll, rollFormula } from '$util/dice';
 import { defined } from '$util/array';
@@ -6,9 +8,10 @@ import type { DataManager } from '$data/index';
 
 export async function createNewCharacter(
 	baseChar: CharDef,
-	items: DataManager['items']
+	items: DataManager['items'],
+	rules: GameRules = DEFAULT_RULES
 ): Promise<Character> {
-	const newHero = new Character(items);
+	const newHero = new Character(items, rules);
 	newHero.name = baseChar.name;
 	newHero.maxHp = baseChar.maxHp;
 	newHero.hp = baseChar.hp ?? baseChar.maxHp;
@@ -37,10 +40,6 @@ export async function createNewCharacter(
 	return newHero;
 }
 
-const THRESHOLDS = [
-	90, 210, 400, 630, 900, 1200, 1550, 1950, 2400, 2900, 3450, 4050, 4700, 5400, 6200
-];
-
 export class Character {
 	#items: DataManager['items'];
 	name = $state('');
@@ -62,7 +61,10 @@ export class Character {
 	flags = new SvelteSet<string>();
 	counters = new SvelteMap<string, number>();
 
-	constructor(items: DataManager['items']) {
+	constructor(
+		items: DataManager['items'],
+		private rules: GameRules = DEFAULT_RULES
+	) {
 		this.#items = items;
 	}
 
@@ -107,16 +109,28 @@ export class Character {
 	}
 
 	gainExperience(amount: number) {
-		if (!amount) return false;
-		this.xp += amount;
-		if (this.xp > THRESHOLDS[this.level - 1]) {
-			this.level += 1;
-			this.str += 2;
-			this.dex += 2;
-			this.maxHp += 8;
-			return true;
+		integer(amount, 'experience');
+		const xp = integer(this.xp + amount, 'experience total');
+		const plan = {
+			level: this.level,
+			str: this.str,
+			dex: this.dex,
+			wil: this.wil,
+			maxHp: this.maxHp
+		};
+		const progression = this.rules.progression;
+		while (plan.level < progression.maxLevel && xp >= progression.thresholds[plan.level - 1]) {
+			plan.level++;
+			const gains = validateGains(
+				typeof progression.gains === 'function' ? progression.gains(plan.level) : progression.gains
+			);
+			for (const stat of ['str', 'dex', 'wil', 'maxHp'] as const)
+				plan[stat] = integer(plan[stat] + (gains[stat] ?? 0), stat);
 		}
-		return false;
+		const leveled = plan.level > this.level;
+		this.xp = xp;
+		Object.assign(this, plan);
+		return leveled;
 	}
 
 	#getInventoryItem(item: Item | string) {
@@ -166,16 +180,16 @@ export class Character {
 	}
 
 	async autoEquip(item: Item | undefined) {
-		console.log(`Auto equipping ${item?.name}`);
-		if (!item || (item.type !== 'armor' && item.type !== 'weapon')) return;
-		const attempted: (keyof Gear)[] = (
-			typeof item.where === 'string' ? [item.where] : (item.where ?? [])
-		).flatMap((eq) => (eq === 'hand' ? ['right', 'left'] : eq));
-		if (attempted.length === 0) {
-			// TODO Auto infer from name?
-			// For now... fail
-			return;
-		}
+		if (!item || this.getInventoryCount(item) < 1) return;
+		const slots = this.rules.equipment.slots(item, this);
+		if (!Array.isArray(slots) || slots.some((slot) => !GEAR_SLOTS.includes(slot)))
+			throw new Error('Invalid equipment slots.');
+		const attempted = slots.filter((slot) => {
+			const allowed = this.rules.equipment.canEquip(this, item, slot);
+			if (typeof allowed !== 'boolean') throw new Error('canEquip must return a boolean.');
+			return allowed;
+		});
+		if (!attempted.length) return;
 		// Set to first unoccupied slot
 		const unoccupied = attempted.find((eqs) => !this.gear[eqs]);
 		if (unoccupied) {

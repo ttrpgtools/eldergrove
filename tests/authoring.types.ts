@@ -1,3 +1,4 @@
+import type { GameState } from '../src/lib/state/game.svelte';
 // Checked by npm run check; these assertions verify the public authoring contracts.
 import { action, condition, createAuthoring } from '../src/lib/authoring';
 import type { Action } from '../src/lib/actions';
@@ -51,3 +52,25 @@ function contracts() {
 	threshold(false);
 }
 void contracts;
+
+function immutableContracts(state: GameState) {
+	// @ts-expect-error the session snapshot is deeply readonly
+	state.definition.locations[0].name = 'Changed';
+	// @ts-expect-error static world fields use readonly getters
+	state.location.current.name = 'Changed';
+	if (state.npc.current) {
+		// @ts-expect-error NPC maximum HP belongs to immutable content
+		state.npc.current.maxHp = 100;
+		state.npc.current.hp = 1;
+	}
+	state.location.current.desc = 'Runtime description';
+	createAuthoring().registerRules('test/rules', {
+		progression: { thresholds: [10], gains: { wil: 1 } }
+	});
+	// @ts-expect-error progression hooks return a gain object
+	createAuthoring().registerRules('test/bad', { progression: { gains: () => 5 } });
+	action('npcDamage', { amount: { from: 'rollResult' }, type: 'fire', source: 'effect' });
+	// @ts-expect-error damage sources are explicit attack/effect variants
+	action('npcDamage', { amount: 5, source: 'magic' });
+}
+void immutableContracts;

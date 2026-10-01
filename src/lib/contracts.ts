@@ -42,6 +42,15 @@ function amount(value: unknown, path: string) {
 	if (object(value, path).from !== 'rollResult')
 		throw new Error(`${path}: expected a number or { from: 'rollResult' }.`);
 }
+function damage(value: unknown, path: string) {
+	if (value && typeof value === 'object' && 'amount' in value) {
+		const packet = object(value, path);
+		amount(packet.amount, `${path}.amount`);
+		if (packet.type !== undefined) string(packet.type, `${path}.type`);
+		if (packet.source !== undefined && packet.source !== 'attack' && packet.source !== 'effect')
+			throw new Error(`${path}: invalid damage source.`);
+	} else amount(value, path);
+}
 function item(value: unknown, path: string) {
 	if (typeof value === 'string') {
 		string(value, path);
@@ -84,9 +93,9 @@ const actionArguments: Record<ActionName, (value: unknown, path: string) => void
 	counterInc: text,
 	counterDec: text,
 	counterReset: text,
-	hpDamage: amount,
+	hpDamage: damage,
 	hpHeal: amount,
-	npcDamage: amount,
+	npcDamage: damage,
 	npcHeal: amount,
 	coinsAdd: amount,
 	coinsRemove: amount,

@@ -1,8 +1,10 @@
+import { RuntimeNpc } from './world.svelte';
+import { immutableSnapshot } from '$lib/definitions';
 import type { DataManager } from '$data/index';
 import type { NpcInstance } from '$lib/types';
 
 class NpcManagerImpl {
-	current: NpcInstance | undefined = $state();
+	current: RuntimeNpc | undefined = $state();
 	status: 'win' | 'run' | undefined = $state();
 	#npcs: DataManager['npcs'];
 	#revision = 0;
@@ -20,7 +22,8 @@ class NpcManagerImpl {
 			npc = await this.#npcs.get(npc);
 		}
 		this.status = undefined;
-		this.current = npc;
+		this.current =
+			npc instanceof RuntimeNpc ? npc : new RuntimeNpc(immutableSnapshot(npc) as NpcInstance);
 		this.#revision++;
 	}
 

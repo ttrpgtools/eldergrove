@@ -39,7 +39,7 @@ const attackAction =
 			await victoryFn(s);
 			return;
 		}
-		await wait(s, 1500);
+		await wait(s, s.rules.combat.retaliationDelay);
 		if (!current()) return;
 		const att = await attackFromNpc(s, npc);
 		s.throwIfCommandCancelled();
@@ -51,11 +51,7 @@ const attackAction =
 		}
 		if (s.character.hp === 0) {
 			s.actionContext.encounterVictory = false;
-			const youDie = await s.data.items.get('yearlings/you-die');
-			s.item.push(youDie);
-			const msg = typeof deathMsg === 'function' ? deathMsg(s) : deathMsg;
-			if (msg) s.message.set(msg);
-			s.pushChoices([]);
+			await s.die(typeof deathMsg === 'function' ? deathMsg(s) : deathMsg);
 		}
 	};
 
@@ -134,9 +130,12 @@ export async function encounterFinish(state: GameState, result: 'win' | 'run', n
 	if (encounter) encounter.finishing = true;
 	const ctx = state.actionContext;
 	ctx.encounterVictory = result === 'win';
-	const streakKey = `${state.location.current.id}:wins`;
-	if (result === 'win') await counterInc(state, streakKey);
-	else await counterReset(state, streakKey);
+	const streakKey = state.rules.encounters.streakKey(state);
+	if (streakKey !== undefined && (typeof streakKey !== 'string' || !streakKey.trim()))
+		throw new Error('Invalid encounter streak key.');
+	if (streakKey !== undefined && result === 'win') await counterInc(state, streakKey);
+	else if (streakKey !== undefined && state.rules.encounters.resetOnRun)
+		await counterReset(state, streakKey);
 	state.npc.status = result;
 	if (encounter) state.choices.remove(encounter.choices);
 	try {
@@ -147,5 +146,7 @@ export async function encounterFinish(state: GameState, result: 'win' | 'run', n
 		if (state.npc.revision === revision) state.npc.clear();
 		if (encounters.get(state) === encounter) encounters.delete(state);
 	}
+	if (state.rules.encounters.onFinish)
+		await state.resolveActions(state.rules.encounters.onFinish, ctx);
 	if (next) await state.resolveActions(next, ctx);
 }

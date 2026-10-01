@@ -1,3 +1,4 @@
+import { resolveRules } from './rules';
 import type { CharDef, GameDef, Gear } from './types';
 
 export const SAVE_VERSION = 1;
@@ -105,7 +106,7 @@ function character(value: unknown, game: GameDef, legacy: boolean): CharDef {
 		dex: integer(char.dex, 'dexterity'),
 		wil: integer(char.wil, 'willpower'),
 		xp: integer(char.xp, 'experience'),
-		level: integer(char.level, 'level', 1),
+		level: integer(char.level, 'level', 1, resolveRules(game).progression.maxLevel),
 		inventory,
 		equip,
 		flags: [...flags],

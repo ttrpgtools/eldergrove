@@ -15,7 +15,7 @@ const drink = [action('diceRoll', 'd4+4'), action('hpHeal', rollResult)];
 const browse = choice('Browse goods', [action('shopStart')], condition('coinsAtLeast', 10));
 ```
 
-`defineAdventure` checks the `GameDef` shape at compile time; `validateAdventure` performs runtime content checks. It does not execute hooks. A numeric action amount can be a literal number or `{ from: 'rollResult' }`. The latter requires a preceding `diceRoll` in the same action/continuation context; a missing result raises an error. `diceMinZero` also requires an existing roll.
+`defineAdventure` checks the `GameDef` shape at compile time and returns a frozen snapshot; `validateAdventure` performs runtime content checks. It does not execute hooks. A numeric action amount can be a literal number or `{ from: 'rollResult' }`. The latter requires a preceding `diceRoll` in the same action/continuation context; a missing result raises an error. `diceMinZero` also requires an existing roll.
 
 `encounterRandomNpc` is available as a declarative action, so its NPC table and declarative follow-up references can be checked:
 
@@ -80,3 +80,53 @@ Asset paths must be root-relative or HTTP(S) URLs. Path traversal and unsupporte
 An intentionally unfinished destination can be listed in `GameDef.unresolvedLocations`. A declarative travel reference to it produces a warning rather than preventing the rest of the adventure from initializing. It still cannot be a starting location or parent, and travel to it fails with a useful command notice until implemented. Discovery explicitly declares `unknown-woods`; this does not bypass other reference checks. Session warnings are available as `contentDiagnostics`.
 
 Function hooks and custom extension closures cannot be statically inspected for hidden IDs or arbitrary behavior. Data lookups and dynamic declarative actions still validate at execution; cover hook behavior with focused engine tests. Increment `contentVersion` when changes invalidate checkpoint meaning or entity layouts; a content-specific checkpoint migration API remains separate work.
+
+## Immutable definitions and world state
+
+`defineAdventure(game)` returns a detached, deeply frozen snapshot with a readonly TypeScript type. `createGameState` also snapshots plain `GameDef` inputs, so existing object-literal adventures remain supported. Arrays and plain objects are copied; trusted functions retain their identity and their closures. Cyclic data and class instances are rejected. Store runtime resources outside adventure data.
+
+A session exposes its readonly snapshot as `state.definition`. Runtime locations and NPCs read static fields from frozen definitions. The supported persistent overrides are `location.desc`, `location.shop[index].stock`, and named `npc.hp`. Character stats, inventory, equipment, flags, and counters remain runtime state. These overrides round trip through existing checkpoints; template NPCs get fresh health each time, while named NPCs retain damage. Use `state.data.locations.get(id)` to change an off-screen location. Static fields such as IDs, names, choices, item properties, and NPC maximum health cannot be edited during play. Add a supported runtime field and checkpoint representation when a new mechanic needs another persistent world override.
+
+Freezing content does not isolate executable hooks or their captured variables. Modules should avoid mutable shared closures when sessions must be independent. Executable adventures remain trusted application code with browser access.
+
+## Adventure rules
+
+Attach `rules` directly to an adventure, or compose reusable modules with `ruleModules`. Registration is scoped like actions and conditions:
+
+```ts
+const author = createAuthoring();
+const training = author.registerRules('my-game/training', {
+	progression: {
+		thresholds: [10, 30, 60],
+		gains: (newLevel) => ({ str: 1, wil: 1, maxHp: newLevel })
+	},
+	combat: {
+		npcAttack: 'd6-[@armor]',
+		retaliationDelay: 500
+	},
+	encounters: { streakKey: () => 'all-wins', resetOnRun: false }
+});
+
+// In the adventure definition:
+// ruleModules: [training],
+// rules: { death: { item: 'my-game/defeat', message: 'Your journey ends here.' } }
+```
+
+`defineRuleModule(id, rules)` is also available from `$lib/rules`. Module IDs must be namespaced and unique within an adventure. Modules merge each rule group in array order; direct adventure overrides take precedence. Each field replaces the preceding field, including arrays, gain objects, and action trees. Unknown rule groups/fields, malformed formulas, and invalid progression configuration fail session validation. Rule hooks are not executed by content validation.
+
+The rule groups are:
+
+- `combat`: unarmed damage formula/type, natural NPC attack formula, retaliation delay, weapon selection, armor calculation, and character/NPC defence hooks. Selection, armor, and defence hooks are synchronous. Armor and returned damage must be finite; damage is truncated to an integer and clamped at zero. Default weapon selection finds an actual weapon in either hand; default armor comes from the torso. NPC `effects` still replace a natural attack.
+- `equipment`: synchronous `slots(item, character)` and `canEquip(character, item, slot)` hooks for automatic player equipment. Only supported gear slots are accepted, and the item must be owned. Starting/restored equipment uses the validated checkpoint definition; these hooks do not silently remove existing gear.
+- `progression`: strictly increasing, nonnegative integer total-XP thresholds, optional maximum level, and a gain object or synchronous `gains(newLevel)` hook. Levels are one-based: threshold index 0 unlocks level 2. Equality reaches the level; a reward applies every crossed level. The default maximum is the number of thresholds plus one; an explicit lower cap is supported. An empty threshold list gives a single level. XP remains accumulated at the cap. Gains support `str`, `dex`, `wil`, and `maxHp`, each a nonnegative integer. Gains are validated before applying the reward, and increases in maximum HP do not heal current HP. Defaults retain Yearlings' thresholds and +2 strength, +2 dexterity, +8 maximum HP, ending at level 16.
+- `encounters`: synchronous `streakKey(state)` returning a nonempty string or `undefined` to disable counters, `resetOnRun`, and optional `onFinish` actions. The default is a location-specific win counter reset on running. Finish actions receive the encounter result in context after the old encounter has been cleaned up, before its supplied follow-up.
+- `death`: optional scene item, message, and `onDeath` actions. Combat calls `state.die(reason?)`; adventure hazards can call it too. It sets HP to zero and marks the context as a defeat. A hook may revive the character; otherwise recovery choices reload the existing checkpoint or explicitly discard only this adventure's checkpoint and restart. Failed death hooks still present recovery. Yearlings configures its existing artwork; Discovery uses the generic scene. A supplied reason takes precedence over the configured message.
+
+All direct `hpDamage`/`npcDamage` effects now pass through the same defence policy as natural attacks. Numeric arguments remain supported; use a damage packet to specify type/source:
+
+```ts
+action('npcDamage', { amount: 20, type: 'fire', source: 'effect' });
+action('hpDamage', { amount: { from: 'rollResult' }, type: 'poison' });
+```
+
+The default source is `effect`; natural attacks use `attack`. Untyped NPC damage reaches an NPC's existing `defend` hook with type `untyped`. Damage hooks should compute a result without changing health themselves. Item turn consumption and immediate encounter victory/death resolution remain the next interaction-lifecycle workstream.

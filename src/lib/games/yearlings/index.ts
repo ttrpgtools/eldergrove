@@ -6,6 +6,7 @@ import { npcInstances, npcTemplates } from './npcs';
 export const yearlings: GameDef = {
 	id: 'yearlings',
 	contentVersion: 1,
+	rules: { death: { item: 'yearlings/you-die' } },
 	start: 'yearlings/grassy-field',
 	baseChar: {
 		name: 'Stranger',

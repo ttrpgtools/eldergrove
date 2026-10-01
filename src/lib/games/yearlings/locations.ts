@@ -141,13 +141,9 @@ export const locations: Location[] = [
 				label: 'Climb down',
 				actions: async (s) => {
 					if (s.character.getInventoryCount('yearlings/old-rope') > 0) {
-						s.message.set(
-							`Oh no!!! This rope is too weak and rotten to hold you! You plunge into the inky blackness of the cave! You land on a sharp spear of rock which thrusts itself through your frail carcass. Before you fall into eternal darkness, your last sight is of a dirty beard and two glowing eyes.`,
-							true
+						await s.die(
+							`Oh no!!! This rope is too weak and rotten to hold you! You plunge into the inky blackness of the cave! You land on a sharp spear of rock which thrusts itself through your frail carcass. Before you fall into eternal darkness, your last sight is of a dirty beard and two glowing eyes.`
 						);
-						const youDie = await s.data.items.get('yearlings/you-die');
-						s.item.push(youDie);
-						s.choices.push([]);
 					} else {
 						await encounterRandomNpc(s, { table: ['yearlings/morlin'] });
 					}

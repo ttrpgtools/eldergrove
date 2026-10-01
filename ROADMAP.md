@@ -67,20 +67,22 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 
 ## 6. Immutable content and extensible rules
 
-- [ ] Formalize immutable adventure definitions and runtime world overrides. Session creation now recursively copies plain adventure data (retaining trusted function hooks) so sessions do not mutate imported definitions.
+- [x] Formalize immutable adventure definitions and runtime world overrides. Both authoring helpers and session creation take deeply frozen snapshots while retaining trusted function hooks; runtime models expose writable location descriptions, shop stock, and NPC HP separately.
 - [x] Define whether named NPCs persist damage between encounters; initialize their runtime state without mutating imported instances. Named NPC HP persists in the session and checkpoints; random encounters are transient.
-- [ ] Move the Yearlings-specific death item out of shared encounters (`yearlings/you-die` currently breaks death in Discovery).
-- [ ] Make combat formulas, damage/defence handling, equipment rules, progression thresholds/stat gains, and encounter win streaks configurable rule modules.
-- [ ] Handle large XP rewards crossing multiple levels and clarify equality at progression thresholds and the maximum level.
-- [ ] Register custom actions/conditions/rule hooks through a supported extension API instead of requiring core edits. Scoped action/condition registration is implemented in section 5; configurable rule hooks remain.
-- [ ] Preserve trusted TypeScript hooks while documenting that executable third-party adventures are code, not sandboxed data.
+- [x] Move the Yearlings-specific death item out of shared encounters. Yearlings configures its scene; Discovery and other adventures have a generic death screen with checkpoint/restart recovery. The rotten-rope hazard now also sets HP to zero through the shared death API.
+- [x] Make combat formulas, damage/defence handling, equipment rules, progression thresholds/stat gains, and encounter win streaks configurable rule modules. All direct damage uses the defence policy, including item effects.
+- [x] Handle large XP rewards crossing multiple levels, inclusive thresholds, configurable caps, and atomic gain validation. Defaults end at level 16; maximum HP gains do not heal current HP.
+- [x] Register custom actions/conditions/rule hooks through a supported extension API instead of requiring core edits. Rule modules compose in order with direct adventure overrides last; scoped registrations reject duplicate names.
+- [x] Preserve trusted TypeScript hooks while documenting that executable third-party adventures are code, not sandboxed data. Mutable closures remain the author's responsibility.
+
+Verified with immutable-source/session isolation, world checkpoint round trips, rule composition/validation, combat defence and equipment policies, progression boundaries, encounter outcomes, and generic/Yearlings death recovery tests. `AUTHORING.md` documents the public rules and override model. Item turn/victory/death resolution and interaction stack ownership remain section 7; shop stock/buyback behavior remains section 8. No development server or browser playthrough was run.
 
 ## 7. Interaction and UI/content boundary
 
 - [ ] Let content request an encounter, trade, dialog, or choices without manipulating internal choice/item stacks directly.
 - [ ] Model explicit interaction modes: exploration, combat, shop, conversation, death, and victory, with engine-owned transitions.
 - [ ] Keep overlays/stacks as implementation details where useful; centralize their lifecycle and cleanup.
-- [ ] Make inventory effects participate in combat defence, victory/death resolution, and turn rules. Bomb damage currently bypasses the weapon defence path and does not resolve victory immediately.
+- [ ] Make inventory effects participate in combat defence, victory/death resolution, and turn rules. Damage now uses the defence policy (section 6); item effects still do not resolve victory immediately or consistently consume a combat turn.
 - [ ] Define supported customization of presentation without making adventure modules depend on Svelte components or full mutable engine internals.
 
 ## 8. Remaining correctness and polish

@@ -1,3 +1,5 @@
+import { snapshotAdventure, type AdventureDefinition } from '$lib/definitions';
+import { resolveRules, ruleAmount, type GameRules } from '$lib/rules';
 import {
 	type Item,
 	type Choice,
@@ -50,6 +52,11 @@ class GameStateImpl {
 	#saveBlocked: boolean;
 	#storedCheckpoint: string | null;
 	#definition: GameDef;
+	readonly rules: GameRules;
+	#dead = false;
+	get definition(): AdventureDefinition {
+		return this.#definition;
+	}
 	#random: RandomSource | undefined;
 	contentDiagnostics: ContentDiagnostic[];
 
@@ -63,6 +70,7 @@ class GameStateImpl {
 		storedCheckpoint: string | null,
 		saveBlocked: boolean,
 		contentDiagnostics: ContentDiagnostic[],
+		rules: GameRules,
 		random?: RandomSource
 	) {
 		this.character = character;
@@ -74,6 +82,7 @@ class GameStateImpl {
 		this.#saveBlocked = saveBlocked;
 		this.contentDiagnostics = contentDiagnostics;
 		this.#random = random;
+		this.rules = rules;
 	}
 
 	roll(formula: string) {
@@ -83,7 +92,7 @@ class GameStateImpl {
 			'@str': this.character.str,
 			'@dex': this.character.dex,
 			'@wil': this.character.wil,
-			'@armor': this.character.gear.torso?.type === 'armor' ? this.character.gear.torso.defence : 0
+			'@armor': ruleAmount(this.rules.combat.armor(this), 'armor')
 		};
 		if (this.npc.current) {
 			rollContext['#maxhp'] = this.npc.current.maxHp;
@@ -146,6 +155,9 @@ class GameStateImpl {
 	}
 	async reset() {
 		if (this.busy) return;
+		await this.#resetCheckpoint();
+	}
+	async #resetCheckpoint() {
 		try {
 			if (!browser) throw new Error('Browser storage is unavailable.');
 			localStorage.removeItem(`gameSave:${this.id}`);
@@ -153,6 +165,49 @@ class GameStateImpl {
 		} catch {
 			this.saveNotice =
 				'The checkpoint could not be removed. Try again when browser storage is available.';
+		}
+	}
+
+	async die(reason?: string) {
+		if (this.#dead) return;
+		this.#dead = true;
+		this.character.hp = 0;
+		const ctx = this.actionContext;
+		ctx.encounterVictory = false;
+		try {
+			if (this.rules.death.onDeath) await this.resolveActions(this.rules.death.onDeath, ctx);
+		} finally {
+			if (this.character.hp > 0) {
+				this.#dead = false;
+			} else {
+				const item: Item = this.rules.death.item
+					? await this.data.items.get(this.rules.death.item)
+					: {
+							id: 'engine/death',
+							name: 'Defeat',
+							type: 'trinket',
+							desc: 'Your adventure has ended. You can return to your checkpoint or start again.'
+						};
+				this.item.push(item);
+				this.message.set(reason ?? this.rules.death.message ?? 'You have fallen.');
+				this.pushChoices(
+					[
+						{
+							label: 'Return to checkpoint',
+							actions: async () => {
+								if (browser) window.location.reload();
+							}
+						},
+						{
+							label: 'Start over',
+							actions: async () => {
+								await this.#resetCheckpoint();
+							}
+						}
+					],
+					ctx
+				);
+			}
 		}
 	}
 
@@ -300,41 +355,28 @@ class GameStateImpl {
 
 export type GameState = GameStateImpl;
 
-// Adventure definitions contain trusted function hooks, so structuredClone cannot
-// copy them. Copy plain data recursively while retaining those hooks by reference.
-function copyDefinition<T>(value: T): T {
-	if (Array.isArray(value)) return value.map(copyDefinition) as T;
-	if (value !== null && typeof value === 'object') {
-		return Object.fromEntries(
-			Object.entries(value).map(([key, entry]) => [key, copyDefinition(entry)])
-		) as T;
-	}
-	return value;
-}
-
 /** Create an independent session without changing the adventure definition. */
 export async function createGameState(
-	game: GameDef,
+	game: GameDef | AdventureDefinition,
 	options: { random?: RandomSource } = {}
 ): Promise<GameState> {
-	const contentDiagnostics = validateAdventure(game);
-	// Share the session's proxies with its data collections and managers. Mutations
-	// through a manager must also be visible when snapshotting the persistent world.
-	const definition = $state(copyDefinition(game));
+	const definition = snapshotAdventure(game);
+	const contentDiagnostics = validateAdventure(definition);
+	const rules = resolveRules(definition);
 	const data = new DataManager();
 	data.items.add(definition.items);
 	data.locations.add(definition.locations);
 	data.npcs.addTemplate(definition.npcTemplates);
 	data.npcs.addInstance(definition.npcInstances);
-	data.biomes.add(copyDefinition(biomes));
+	data.biomes.add(biomes);
 
 	let saved: Checkpoint | undefined;
 	let storedCheckpoint: string | null = null;
 	let loadNotice: string | undefined;
 	if (browser) {
 		try {
-			storedCheckpoint = localStorage.getItem(`gameSave:${game.id}`);
-			if (storedCheckpoint !== null) saved = parseCheckpoint(storedCheckpoint, game);
+			storedCheckpoint = localStorage.getItem(`gameSave:${definition.id}`);
+			if (storedCheckpoint !== null) saved = parseCheckpoint(storedCheckpoint, definition);
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : 'Browser storage is unavailable.';
 			loadNotice = `${reason} A new game is available; the existing checkpoint is protected until you reset this adventure.`;
@@ -352,20 +394,21 @@ export async function createGameState(
 			(await data.npcs.get(entry.id)).hp = entry.hp;
 		}
 	}
-	const char = await createNewCharacter(saved?.character ?? definition.baseChar, data.items);
+	const char = await createNewCharacter(saved?.character ?? definition.baseChar, data.items, rules);
 	const loc = await createLocationManager(data, saved?.location ?? definition.start);
 	if (saved?.previousLocation) loc.previous = await data.locations.get(saved.previousLocation);
 	const npc = createNpcManager(data.npcs);
 	const state = new GameStateImpl(
-		game.id,
+		definition.id,
 		char,
 		loc,
 		npc,
 		data,
-		game,
+		definition,
 		storedCheckpoint,
 		!!loadNotice,
 		contentDiagnostics,
+		rules,
 		options.random
 	);
 	state.saveNotice = loadNotice;
@@ -382,7 +425,7 @@ export async function createGameState(
 // This cache is not UI state and intentionally does not trigger reactive updates.
 // eslint-disable-next-line svelte/prefer-svelte-reactivity
 const sessions = new Map<string, Promise<GameState>>();
-export async function getGameState(game: GameDef): Promise<GameState> {
+export async function getGameState(game: GameDef | AdventureDefinition): Promise<GameState> {
 	if (!browser) return createGameState(game);
 	const existing = sessions.get(game.id);
 	if (existing) return existing;

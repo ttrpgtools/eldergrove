@@ -1,6 +1,7 @@
 import type { GameState } from '$state/game.svelte';
 import type { Actions } from './actions';
 import type { Condition } from './conditions';
+import type { RuleOverrides, RuleModule } from './rules';
 
 export type Identifiable = { id: string };
 export type Named = { name: string };
@@ -147,6 +148,8 @@ export interface GameDef {
 	contentVersion?: number;
 	/** Explicit unfinished destinations are warnings; other missing references are errors. */
 	unresolvedLocations?: string[];
+	rules?: RuleOverrides;
+	ruleModules?: RuleModule[];
 	start: string;
 	baseChar: CharDef;
 	locations: Location[];

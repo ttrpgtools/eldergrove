@@ -1,6 +1,5 @@
 import type { Choice } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
-import { resolveList } from '$util/async';
 
 function noEncounter(state: GameState) {
 	state.message.set(`This place doesn't seem to have any wares available at the moment.`);
@@ -9,10 +8,15 @@ function noEncounter(state: GameState) {
 
 export async function shopStart(state: GameState, msg?: string) {
 	if (!state.location.current.shop) return noEncounter(state);
-	const fullshop = await resolveList(
-		state.location.current.shop,
-		'item',
-		state.data.items.get.bind(state.data.items)
+	const fullshop = await Promise.all(
+		state.location.current.shop.map(async (listing) => ({
+			item: await state.data.items.get(
+				typeof listing.item === 'string' ? listing.item : listing.item.id
+			),
+			cost: listing.cost,
+			stock: listing.stock,
+			willBuy: listing.willBuy
+		}))
 	);
 	const shopChoices: Choice[] = fullshop.map((inv) => ({
 		label: `${inv.item.name} (${inv.cost})`,

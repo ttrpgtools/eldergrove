@@ -1,3 +1,4 @@
+import type { RuntimeLocation } from './world.svelte';
 import type { Entity, Location } from '$lib/types';
 import type { DataManager } from '$data/index';
 
@@ -17,8 +18,8 @@ async function getTopLocationNames(
  * You are always somewhere. This can help you find out where.
  */
 class LocationManagerImpl {
-	current: Location = $state()!;
-	previous: Location | undefined = $state();
+	current: RuntimeLocation = $state()!;
+	previous: RuntimeLocation | undefined = $state();
 	biome: Entity = $state()!;
 	primary: string = $state()!;
 	secondary: string | undefined = $state();
@@ -26,7 +27,7 @@ class LocationManagerImpl {
 	#biomes: DataManager['biomes'];
 
 	constructor(
-		starting: Location,
+		starting: RuntimeLocation,
 		names: string[],
 		biome: Entity,
 		locations: DataManager['locations'],
@@ -37,7 +38,7 @@ class LocationManagerImpl {
 		this.#setLocation(starting, names, biome);
 	}
 
-	#setLocation(location: Location, names: string[], biome: Entity) {
+	#setLocation(location: RuntimeLocation, names: string[], biome: Entity) {
 		this.previous = this.current;
 		this.current = location;
 		this.primary = names[0] ?? location.name;
@@ -46,13 +47,13 @@ class LocationManagerImpl {
 	}
 
 	async moveTo(location: string | Location) {
-		if (typeof location === 'string') {
-			location = await this.#locations.get(location);
-		}
-		const biome = await this.#biomes.get(location.biome);
-		const names = await getTopLocationNames(location, this.#locations);
-		this.#setLocation(location, names, biome);
-		return location;
+		const current = await this.#locations.get(
+			typeof location === 'string' ? location : location.id
+		);
+		const biome = await this.#biomes.get(current.biome);
+		const names = await getTopLocationNames(current, this.#locations);
+		this.#setLocation(current, names, biome);
+		return current;
 	}
 
 	nameAlreadyShown(name: string) {

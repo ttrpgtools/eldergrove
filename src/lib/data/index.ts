@@ -6,14 +6,17 @@ import {
 	type NpcTemplate,
 	type NpcInstance
 } from '$lib/types';
+import { RuntimeLocation, RuntimeNpc } from '$state/world.svelte';
+import { immutableSnapshot } from '$lib/definitions';
 
-class DataCollection<T extends Identifiable> {
+class DataCollection<T extends Identifiable, TDefinition extends Identifiable = T> {
+	constructor(private make: (definition: TDefinition) => T = (x) => x as unknown as T) {}
 	#collection = new Map<string, T>();
 	get values(): T[] {
 		return [...this.#collection.values()];
 	}
-	add(items: T[]) {
-		items.forEach((x) => this.#collection.set(x.id, x));
+	add(items: readonly TDefinition[]) {
+		items.forEach((x) => this.#collection.set(x.id, this.make(x)));
 	}
 
 	async get(id: string): Promise<T> {
@@ -30,18 +33,18 @@ class TemplateDataCollection<TTemplate extends Identifiable, TInstance extends I
 		return [...this.#instances.values()];
 	}
 	#name: string;
-	#makeInstance: (tmpl: TTemplate) => TInstance;
-	constructor(name: string, makeInstance: (tmpl: TTemplate) => TInstance) {
+	#makeInstance: (tmpl: TTemplate | NpcInstance) => TInstance;
+	constructor(name: string, makeInstance: (tmpl: TTemplate | NpcInstance) => TInstance) {
 		this.#name = name;
 		this.#makeInstance = makeInstance;
 	}
 
 	addTemplate(items: TTemplate[]) {
-		items.forEach((x) => this.#templates.set(x.id, x));
+		items.forEach((x) => this.#templates.set(x.id, immutableSnapshot(x) as TTemplate));
 	}
 
-	addInstance(items: TInstance[]) {
-		items.forEach((x) => this.#instances.set(x.id, x));
+	addInstance(items: NpcInstance[]) {
+		items.forEach((x) => this.#instances.set(x.id, this.#makeInstance(x)));
 	}
 
 	async get(id: string): Promise<TInstance> {
@@ -54,11 +57,13 @@ class TemplateDataCollection<TTemplate extends Identifiable, TInstance extends I
 }
 
 export class DataManager {
-	locations = new DataCollection<Location>();
-	items = new DataCollection<Item>();
-	biomes = new DataCollection<Entity>();
-	npcs = new TemplateDataCollection<NpcTemplate, NpcInstance>('npc', (x) => ({
-		...x,
-		hp: x.maxHp
-	}));
+	locations = new DataCollection<RuntimeLocation, Location>(
+		(x) => new RuntimeLocation(immutableSnapshot(x) as Location)
+	);
+	items = new DataCollection<Item>((x) => immutableSnapshot(x) as Item);
+	biomes = new DataCollection<Entity>((x) => immutableSnapshot(x) as Entity);
+	npcs = new TemplateDataCollection<NpcTemplate, RuntimeNpc>(
+		'npc',
+		(x) => new RuntimeNpc(immutableSnapshot(x) as NpcTemplate | NpcInstance)
+	);
 }

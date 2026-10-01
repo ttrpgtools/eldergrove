@@ -1,22 +1,13 @@
 import type { NpcInstance } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
-import { minZero } from '$util/math';
 import { hpDamage } from './hp';
 import { npcDamage } from './npc';
-
-const NATURAL = `d[#maxhp]-0.5*([@armor]+[@dex])`;
-const UNARMED = `d4 + [@str]`;
 
 async function basicCharacterAttack(
 	state: GameState,
 	{ amt, type }: { amt: string; type: string }
 ) {
-	let value = state.roll(amt);
-	if (state.npc.current && state.npc.current.defend) {
-		value = state.npc.current.defend(state, type, value);
-	}
-	await npcDamage(state, value);
-	return value;
+	return npcDamage(state, { amount: state.roll(amt), type, source: 'attack' });
 }
 
 export async function attackFromNpc(state: GameState, npc: NpcInstance | undefined) {
@@ -25,21 +16,19 @@ export async function attackFromNpc(state: GameState, npc: NpcInstance | undefin
 	if (npc.effects) {
 		return await state.resolveActions(npc.effects);
 	} else {
-		const value = minZero(state.roll(NATURAL));
-		await hpDamage(state, value);
-		return value;
+		return hpDamage(state, { amount: state.roll(state.rules.combat.npcAttack), source: 'attack' });
 	}
 }
 
 export async function attackFromCharacter(state: GameState) {
-	const weapon = state.character.gear.right ?? state.character.gear.left;
+	const weapon = state.rules.combat.weapon(state);
 	if (weapon) {
-		if (weapon.effects && weapon.effects.length) {
+		if (weapon.effects && (typeof weapon.effects === 'function' || weapon.effects.length)) {
 			await state.resolveActions(weapon.effects);
 			return;
 		} else if (weapon.type === 'weapon' && weapon.damage) {
 			return await basicCharacterAttack(state, weapon.damage);
 		}
 	}
-	return await basicCharacterAttack(state, { amt: UNARMED, type: 'blunt' });
+	return await basicCharacterAttack(state, state.rules.combat.unarmed);
 }

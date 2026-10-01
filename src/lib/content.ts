@@ -1,3 +1,5 @@
+import { resolveRules, type GameRules } from './rules';
+import type { AdventureDefinition } from './definitions';
 import type { Action } from './actions';
 import type { Condition } from './conditions';
 import type { GameDef, Entity } from './types';
@@ -27,7 +29,12 @@ export class ContentValidationError extends Error {
 }
 
 /** Pure author diagnostics; no hooks execute, assets fetch, or input data mutate. */
-export function inspectAdventure(game: GameDef, options: ContentOptions = {}): ContentDiagnostic[] {
+export function inspectAdventure(
+	input: GameDef | AdventureDefinition,
+	options: ContentOptions = {}
+): ContentDiagnostic[] {
+	const game = input as GameDef;
+	let rules: GameRules | undefined;
 	const diagnostics: ContentDiagnostic[] = [];
 	const report = (
 		path: string,
@@ -60,6 +67,9 @@ export function inspectAdventure(game: GameDef, options: ContentOptions = {}): C
 		report('game', error instanceof Error ? error.message : String(error));
 		return diagnostics;
 	}
+	check('rules', () => {
+		rules = resolveRules(game);
+	});
 	const templates = Array.isArray(game.npcTemplates) ? game.npcTemplates : [];
 	const instances = Array.isArray(game.npcInstances) ? game.npcInstances : [];
 	check('npcTemplates', () => {
@@ -252,6 +262,12 @@ export function inspectAdventure(game: GameDef, options: ContentOptions = {}): C
 			integer(npc.hp, `npcInstances[${i}].hp`, 0, npc.maxHp);
 		});
 	for (const [id, entry] of biomes) entity(entry, `biomes['${id}']`);
+	if (rules?.death.item)
+		check('rules.death.item', () => reference(rules!.death.item, items, 'rules.death.item'));
+	if (rules && rules.death.onDeath !== undefined)
+		actions(rules.death.onDeath, 'rules.death.onDeath');
+	if (rules && rules.encounters.onFinish !== undefined)
+		actions(rules.encounters.onFinish, 'rules.encounters.onFinish');
 	check('baseChar', () => {
 		const char = game.baseChar;
 		string(char.name, 'baseChar.name');
@@ -259,7 +275,7 @@ export function inspectAdventure(game: GameDef, options: ContentOptions = {}): C
 		if (char.hp !== undefined) integer(char.hp, 'baseChar.hp', 1, hp);
 		for (const key of ['coin', 'str', 'dex', 'wil', 'xp'] as const)
 			integer(char[key], `baseChar.${key}`);
-		integer(char.level, 'baseChar.level', 1);
+		integer(char.level, 'baseChar.level', 1, rules?.progression.maxLevel);
 		const slots = new Set<string>(),
 			inventory = new Set<string>();
 		for (const entry of array(char.equip, 'baseChar.equip')) {
@@ -301,7 +317,7 @@ export function inspectAdventure(game: GameDef, options: ContentOptions = {}): C
 	return diagnostics;
 }
 export function validateAdventure(
-	game: GameDef,
+	game: GameDef | AdventureDefinition,
 	options: ContentOptions = {}
 ): ContentDiagnostic[] {
 	const result = inspectAdventure(game, options);

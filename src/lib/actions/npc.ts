@@ -1,3 +1,5 @@
+import { ruleAmount, type DamageArgument } from '$lib/rules';
+import { resolveDamage } from '$lib/damage';
 import { resolveNumber, type NumericValue } from '$lib/arguments';
 import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
@@ -6,14 +8,15 @@ import { rollOnTable } from '$util/table';
 
 export async function npcDamage(
 	state: GameState,
-	value: NumericValue,
+	value: DamageArgument,
 	ctx: ActionContext = state.actionContext
 ) {
-	let amt = resolveNumber(value, ctx);
+	const damage = resolveDamage(value, ctx);
+	const amt = ruleAmount(state.rules.combat.defendNpc(state, damage), 'damage');
 	if (state.npc.current) {
-		amt = minZero(amt);
 		state.npc.current.hp = minZero(state.npc.current.hp - amt);
 		state.events.emit('npcHpChange', 0 - amt);
+		return amt;
 	}
 }
 
