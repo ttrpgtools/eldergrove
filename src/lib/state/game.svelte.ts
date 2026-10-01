@@ -59,6 +59,9 @@ class GameStateImpl {
 	get canUseInventory() {
 		return this.character.hp > 0 && this.interactions.canUseInventory;
 	}
+	get canChangeEquipment() {
+		return this.canUseInventory || (this.character.hp > 0 && this.mode === 'shop');
+	}
 	requestDialog(request: DialogRequest) {
 		if (this.mode === 'death') throw new Error('Cannot open a dialog after defeat.');
 		return this.interactions.dialog(request);
@@ -310,7 +313,7 @@ class GameStateImpl {
 
 	equip(item: Item | undefined) {
 		return this.runCommand(async () => {
-			if (item && this.canUseInventory && this.character.getInventoryCount(item) > 0) {
+			if (item && this.canChangeEquipment && this.character.getInventoryCount(item) > 0) {
 				await this.character.autoEquip(item);
 			}
 		});
@@ -318,7 +321,7 @@ class GameStateImpl {
 
 	unequip(slot: keyof Gear) {
 		return this.runCommand(async () => {
-			if (this.canUseInventory) await this.character.unequip(slot);
+			if (this.canChangeEquipment) await this.character.unequip(slot);
 		});
 	}
 

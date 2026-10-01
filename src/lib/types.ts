@@ -151,6 +151,8 @@ export interface GameDef {
 	id: string;
 	/** Increment when content changes require a checkpoint migration. Defaults to 1. */
 	contentVersion?: number;
+	/** Trusted in-memory migration; returned checkpoints still undergo full validation. */
+	migrateCheckpoint?: (checkpoint: unknown) => unknown;
 	/** Explicit unfinished destinations are warnings; other missing references are errors. */
 	unresolvedLocations?: string[];
 	rules?: RuleOverrides;

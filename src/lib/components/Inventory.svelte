@@ -66,11 +66,11 @@
 							<p class="mt-4">{shownItem.desc}</p>
 						{/if}
 						<div class="flex flex-col gap-4">
-							{#if equippable}
+							{#if equippable && gamestate.canChangeEquipment}
 								<button
 									type="button"
 									class="nes-btn"
-									disabled={gamestate.busy || !gamestate.canUseInventory}
+									disabled={gamestate.busy || !gamestate.canChangeEquipment}
 									onclick={() => gamestate.equip(shownItem)}>Equip</button
 								>
 							{/if}

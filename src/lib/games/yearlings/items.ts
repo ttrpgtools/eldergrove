@@ -1,3 +1,4 @@
+import { hpHeal } from '$lib/actions/hp';
 import type { Item } from '$lib/types';
 
 export const items: Item[] = [
@@ -29,7 +30,29 @@ export const items: Item[] = [
 		icon: '',
 		image: '/img/item/health-potion-sm.webp',
 		effects: [{ action: 'hpHeal', arg: 10 }],
-		desc: `You'd think this would taste like strawberry or cherry, but nope. Hope you like bitter.`
+		desc: `Restores 10 HP. You'd think this would taste like strawberry or cherry, but nope. Hope you like bitter.`
+	},
+	{
+		type: 'consumable',
+		id: 'yearlings/greater-cure-potion',
+		name: 'Greater Cure Potion',
+		image: '/img/item/greater-cure-potion.webp',
+		effects: [{ action: 'hpHeal', arg: 50 }],
+		desc: 'Restores 50 HP. A stronger brew, with an even more bitter aftertaste.'
+	},
+	{
+		type: 'consumable',
+		id: 'yearlings/elixir',
+		name: 'Elixir',
+		image: '/img/item/elixir.webp',
+		effects: [
+			{
+				action: async (state) => {
+					await hpHeal(state, state.character.maxHp - state.character.hp);
+				}
+			}
+		],
+		desc: 'Restores all your HP. A precious remedy for the direst moments.'
 	},
 	{
 		type: 'consumable',

@@ -133,6 +133,36 @@ describe('checkpoints', () => {
 		expect(JSON.parse(storage.get('gameSave:saves')!).version).toBe(1);
 	});
 
+	it('migrates Yearlings potion stock while preserving progress and the stored checkpoint', async () => {
+		const { createGameState } = await import('../src/lib/state/game.svelte');
+		const { yearlings } = await import('../src/lib/games/yearlings');
+		const state = await createGameState(yearlings);
+		const checkpoint = state.toJSON();
+		checkpoint.contentVersion = 1;
+		checkpoint.character.coin = 2345;
+		const store = checkpoint.world.locations.find(
+			(location) => location.id === 'yearlings/pylaim/general'
+		)!;
+		store.stock = [0, 2];
+		const raw = JSON.stringify(checkpoint);
+		storage.set('gameSave:yearlings', raw);
+		const restored = await createGameState(yearlings);
+		expect(restored.saveNotice).toBeUndefined();
+		expect(restored.character.coin).toBe(2345);
+		expect((await restored.data.locations.get(store.id)).shop!.map((entry) => entry.stock)).toEqual(
+			[0, 2, 5, 5]
+		);
+		expect(storage.get('gameSave:yearlings')).toBe(raw);
+		expect(await restored.save()).toBe(true);
+		expect((await createGameState(yearlings)).saveNotice).toBeUndefined();
+		store.stock = [-1, 2];
+		expect(() => parseCheckpoint(JSON.stringify(checkpoint), yearlings)).toThrow();
+		const legacy = parseCheckpoint(
+			JSON.stringify({ character: yearlings.baseChar, location: yearlings.start }),
+			yearlings
+		);
+		expect(legacy.contentVersion).toBe(2);
+	});
 	it('restores without replaying entry rewards, prompts, or exit counter resets', async () => {
 		const { createGameState } = await import('../src/lib/state/game.svelte');
 		const game = adventure();

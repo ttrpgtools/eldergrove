@@ -136,6 +136,21 @@ describe('trade pricing and stock', () => {
 		await state.requestTrade();
 		expect(state.availableChoices.some((choice) => choice.label.startsWith('Sell'))).toBe(false);
 	});
+	it('unequips in a shop and immediately makes the item sellable', async () => {
+		const game = shopGame();
+		game.baseChar.equip = [['sword', 'right']];
+		const state = await createGameState(game);
+		await state.requestTrade();
+		expect(state.canChangeEquipment).toBe(true);
+		expect(state.canUseInventory).toBe(false);
+		await state.unequip('right');
+		expect(state.character.gear.right).toBeUndefined();
+		expect(choice(state, 'Sell Sword (4)').description).toBe('1 carried');
+		await trade(state, 'Sell Sword (4)');
+		expect(state.character.coin).toBe(104);
+		expect(state.character.getInventoryCount('sword')).toBe(0);
+		expect(state.mode).toBe('shop');
+	});
 	it('rechecks ownership and rejects overflow before selling', async () => {
 		const state = await createGameState(shopGame());
 		await state.requestTrade();
@@ -239,6 +254,24 @@ describe('inventory and messages', () => {
 		await npcLoot(state);
 		expect(state.character.getInventoryCount('potion')).toBe(3);
 		expect(state.character.getInventoryCount('sword')).toBe(1);
+	});
+});
+
+describe('Yearlings healing supplies', () => {
+	it('offers all potion tiers at level one with finite stock and charges their prices', async () => {
+		const { yearlings } = await import('../src/lib/games/yearlings');
+		const state = await createGameState(yearlings);
+		await state.location.moveTo('yearlings/pylaim/general');
+		state.resetInteractions();
+		state.character.coin = 2260;
+		await state.requestTrade();
+		for (const label of ['Cure Potion (10)', 'Greater Cure Potion (250)', 'Elixir (2000)']) {
+			await trade(state, label);
+		}
+		expect(state.character.coin).toBe(0);
+		expect(state.location.current.shop!.map((entry) => entry.stock)).toEqual([4, 5, 4, 4]);
+		expect(state.character.getInventoryCount('yearlings/greater-cure-potion')).toBe(1);
+		expect(state.character.getInventoryCount('yearlings/elixir')).toBe(1);
 	});
 });
 

@@ -85,7 +85,9 @@ export async function shopStart(state: GameState, msg?: string) {
 			return [
 				{
 					label: `${item.name} (${cost})`,
-					description: `${listing.stock} in stock`,
+					get description() {
+						return `${listing.stock} in stock`;
+					},
 					show: () => listing.stock > 0,
 					actions: confirm(false)
 				},
@@ -94,7 +96,9 @@ export async function shopStart(state: GameState, msg?: string) {
 					: [
 							{
 								label: `Sell ${item.name} (${offer})`,
-								description: `${state.character.getInventoryCount(item)} carried`,
+								get description() {
+									return `${state.character.getInventoryCount(item)} carried`;
+								},
 								show: () => state.character.getInventoryCount(item) > 0,
 								actions: confirm(true)
 							}

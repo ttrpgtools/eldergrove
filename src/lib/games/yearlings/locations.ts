@@ -272,8 +272,10 @@ export const locations: Location[] = [
 			BACK('Leave Store')
 		],
 		shop: [
-			{ item: 'yearlings/cure-potion', stock: 5, cost: 10, willBuy: false },
-			{ item: 'yearlings/bomb', stock: 5, cost: 15, willBuy: false }
+			{ item: 'yearlings/cure-potion', stock: 15, cost: 25, willBuy: false },
+			{ item: 'yearlings/bomb', stock: 15, cost: 40, willBuy: false },
+			{ item: 'yearlings/greater-cure-potion', stock: 5, cost: 250, willBuy: false },
+			{ item: 'yearlings/elixir', stock: 3, cost: 2000, willBuy: false }
 		],
 		desc: `What'll it be?`
 	},

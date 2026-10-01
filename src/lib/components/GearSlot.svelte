@@ -15,11 +15,11 @@
 <p class="-mx-1 flex items-center gap-4 px-1 py-2 hover:bg-neutral-800 md:py-1">
 	<Icon {icon} class={`size-6 ${flip ? `-scale-x-100` : ''}`} />
 	{item?.name ?? '(None)'}
-	{#if item != null}
+	{#if item != null && gamestate.canChangeEquipment}
 		<button
 			type="button"
 			class="nes-pointer ml-auto block h-full px-2"
-			disabled={gamestate.busy || !gamestate.canUseInventory}
+			disabled={gamestate.busy || !gamestate.canChangeEquipment}
 			onclick={() => gamestate.unequip(where)}
 		>
 			<i class="nes-icon close is-small before:text-white"></i>

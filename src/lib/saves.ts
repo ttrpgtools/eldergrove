@@ -186,7 +186,7 @@ export function parseCheckpoint(raw: string, game: GameDef): Checkpoint {
 		if ('adventureId' in save || 'contentVersion' in save || 'world' in save) {
 			throw new Error('The checkpoint is missing its save version.');
 		}
-		return validateCheckpoint(
+		const checkpoint = validateCheckpoint(
 			{
 				version: SAVE_VERSION,
 				adventureId: game.id,
@@ -196,9 +196,13 @@ export function parseCheckpoint(raw: string, game: GameDef): Checkpoint {
 				previousLocation: null,
 				world: { locations: [], npcs: [] }
 			},
-			game,
+			{ ...game, contentVersion: 1 },
 			true
 		);
+		return validateCheckpoint(
+			game.migrateCheckpoint ? game.migrateCheckpoint(checkpoint) : checkpoint,
+			game
+		);
 	}
-	return validateCheckpoint(save, game);
+	return validateCheckpoint(game.migrateCheckpoint ? game.migrateCheckpoint(save) : save, game);
 }

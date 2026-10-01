@@ -259,6 +259,26 @@ describe('item combat turns', () => {
 		expect(state.character.hp).toBe(12);
 		expect(state.character.getInventoryCount('potion')).toBe(2);
 	});
+	it.each([
+		['yearlings/cure-potion', 10],
+		['yearlings/greater-cure-potion', 50],
+		['yearlings/elixir', 200]
+	])('heals with %s before one enemy retaliation and consumes it once', async (id, healing) => {
+		const { yearlings } = await import('../src/lib/games/yearlings');
+		const game = adventure();
+		game.items.push(...yearlings.items);
+		game.baseChar.maxHp = 200;
+		game.baseChar.hp = 20;
+		game.baseChar.inventory.push([id, 1]);
+		const state = await createGameState(game);
+		await state.requestEncounter({ npc: 'boss' });
+		await use(state, id);
+		expect(state.character.hp).toBe(Math.min(200, 20 + healing) - 3);
+		expect(state.character.getInventoryCount(id)).toBe(0);
+		const hp = state.character.hp;
+		await use(state, id);
+		expect(state.character.hp).toBe(hp);
+	});
 	it.each(['free', 'forbidden'] as const)('honors the %s combat policy', async (policy) => {
 		const game = adventure();
 		game.items[1].combatUse = policy;
