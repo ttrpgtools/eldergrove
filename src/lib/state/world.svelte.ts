@@ -67,6 +67,9 @@ export class RuntimeLocation extends RuntimeEntity<Location> {
 	set desc(value: string | undefined) {
 		this.#desc = value;
 	}
+	get trade() {
+		return this.definition.trade;
+	}
 	get biome() {
 		return this.definition.biome;
 	}

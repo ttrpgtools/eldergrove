@@ -1,3 +1,5 @@
+import { purchasePrice, sellingPrice } from './trade';
+import type { Item, Location } from './types';
 import { resolveRules, type GameRules } from './rules';
 import type { AdventureDefinition } from './definitions';
 import type { Action } from './actions';
@@ -209,6 +211,8 @@ export function inspectAdventure(
 				for (const [i, value] of array(entry.choices, path).entries()) {
 					const choice = object(value, path);
 					string(choice.label, path);
+					if (choice.description !== undefined)
+						string(choice.description, `${path}.choices[${i}].description`);
 					if (choice.show !== undefined) {
 						assertCondition(choice.show, path);
 						condition(choice.show, `${path}.choices[${i}].show`);
@@ -216,15 +220,41 @@ export function inspectAdventure(
 					actions(choice.actions, `${path}.choices[${i}].actions`);
 				}
 			});
+		if (entry.trade !== undefined)
+			check(`${path}.trade`, () => {
+				const trade = object(entry.trade, path);
+				for (const key of ['purchaseMultiplier', 'saleMultiplier'])
+					if (trade[key] !== undefined) number(trade[key], `${path}.trade.${key}`, 0, 100);
+			});
 		if (entry.shop !== undefined)
 			check(`${path}.shop`, () => {
+				const shopIds = new Set<string>();
 				for (const [i, value] of array(entry.shop, path).entries()) {
 					const listing = object(value, path);
 					reference(listing.item, items, `${path}.shop[${i}].item`);
 					integer(listing.stock, `${path}.shop[${i}].stock`);
-					integer(listing.cost, `${path}.shop[${i}].cost`);
+					if (listing.cost !== undefined) integer(listing.cost, `${path}.shop[${i}].cost`);
+					const itemId =
+						typeof listing.item === 'string' ? listing.item : object(listing.item, path).id;
+					if (shopIds.has(itemId as string)) throw new Error(`Duplicate shop listing '${itemId}'.`);
+					shopIds.add(itemId as string);
+					const item = items.get(itemId as string);
+					if (item && rules) {
+						purchasePrice(
+							item as unknown as Item,
+							listing as unknown as import('./types').ShopItem,
+							entry as unknown as Location,
+							rules
+						);
+						sellingPrice(
+							item as unknown as Item,
+							listing as unknown as import('./types').ShopItem,
+							entry as unknown as Location,
+							rules
+						);
+					}
 					if (listing.willBuy !== undefined && typeof listing.willBuy !== 'boolean')
-						number(listing.willBuy, path, 0);
+						integer(listing.willBuy, path, 0);
 				}
 			});
 		check(`${path}.parent`, () => {
@@ -248,6 +278,8 @@ export function inspectAdventure(
 				!['turn', 'free', 'forbidden'].includes(String(entry.combatUse))
 			)
 				throw new Error('Invalid combat item-use policy.');
+			for (const key of ['price', 'sellPrice'])
+				if (entry[key] !== undefined) integer(entry[key], `${path}.${key}`);
 			if (entry.type === 'armor') number(entry.defence, `${path}.defence`, 0);
 			if (entry.where !== undefined)
 				for (const slot of Array.isArray(entry.where) ? entry.where : [entry.where])

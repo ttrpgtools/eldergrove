@@ -237,6 +237,8 @@ export function walkActions(
 		for (const [index, entry] of array(value, path).entries()) {
 			const choice = object(entry, `${path}[${index}]`);
 			string(choice.label, `${path}[${index}].label`);
+			if (choice.description !== undefined)
+				string(choice.description, `${path}[${index}].description`);
 			if (choice.show !== undefined) condition(choice.show, `${path}[${index}].show`);
 			walk(choice.actions, `${path}[${index}].actions`, depth);
 		}

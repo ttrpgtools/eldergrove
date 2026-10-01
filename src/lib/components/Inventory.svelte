@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
+	import Artwork from './Artwork.svelte';
+	import type { Gear, Item } from '$lib/types';
 	import type { GameState } from '$state/game.svelte';
 	import Button from '$ui/button/button.svelte';
 	import * as Dialog from '$ui/dialog';
@@ -7,10 +8,14 @@
 	let { gamestate, open = $bindable() }: { gamestate: GameState; open: boolean } = $props();
 	const character = $derived(gamestate.character);
 	let shownItem: Item | undefined = $state();
+	let shownSlot: keyof Gear | undefined = $state();
 	const equippable = $derived(
 		shownItem &&
-			!character.isEquipped(shownItem) &&
-			(shownItem.type === 'armor' || shownItem.type === 'weapon')
+			shownSlot === undefined &&
+			character.getInventoryCount(shownItem) > 0 &&
+			gamestate.rules.equipment
+				.slots(shownItem, character)
+				.some((slot) => gamestate.rules.equipment.canEquip(character, shownItem!, slot))
 	);
 	const usable = $derived(shownItem ? isUsable(shownItem) : false);
 </script>
@@ -19,6 +24,7 @@
 	bind:open
 	onOpenChange={() => {
 		shownItem = undefined;
+		shownSlot = undefined;
 	}}
 >
 	<Dialog.Content>
@@ -26,26 +32,36 @@
 		<Dialog.Description class="sr-only">Manage your equipment and carried items.</Dialog.Description
 		>
 		<div class="text-sm text-muted-foreground">
-			<div class="grid grid-cols-2 items-start gap-4">
+			<div class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
 				<div class="grid grid-cols-[1fr_3rem] items-center gap-x-2 gap-y-4">
-					{#each character.equipped as gear (gear.id)}
-						<button type="button" class="nes-pointer text-left" onclick={() => (shownItem = gear)}
-							>{gear.name}</button
-						>
-						<p class="text-right"></p>
+					{#each Object.entries(character.gear) as [slot, gear] (slot)}
+						{#if gear}
+							<button
+								type="button"
+								class="nes-pointer min-h-11 break-words text-left"
+								onclick={() => {
+									shownItem = gear;
+									shownSlot = slot as keyof Gear;
+								}}>{gear.name}</button
+							>
+							<p class="text-right">{slot}</p>
+						{/if}
 					{/each}
 					{#each character.inventory as entry (entry.item.id)}
 						<button
 							type="button"
-							class="nes-pointer text-left"
-							onclick={() => (shownItem = entry.item)}>{entry.item.name}</button
+							class="nes-pointer min-h-11 break-words text-left"
+							onclick={() => {
+								shownItem = entry.item;
+								shownSlot = undefined;
+							}}>{entry.item.name}</button
 						>
 						<p class="text-right">{entry.quantity}</p>
 					{/each}
 				</div>
 				<div class="flex flex-col gap-2">
 					{#if shownItem}
-						<img src={shownItem?.image} alt={shownItem?.name} class=" aspect-square" />
+						<Artwork src={shownItem.image} alt={shownItem.name} />
 						{#if shownItem?.desc}
 							<p class="mt-4">{shownItem.desc}</p>
 						{/if}

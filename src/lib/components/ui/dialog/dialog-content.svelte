@@ -21,8 +21,14 @@
 					class={cn('fixed inset-0 z-50 flex items-center justify-center', className)}
 					transition:flyAndScale={{ duration: 200 }}
 				>
-					<div class="pixel-corners relative size-[80vmin] gap-4 bg-background p-6 shadow-lg">
-						{@render children?.()}
+					<div
+						class="pixel-corners relative max-h-[90dvh] w-[calc(100%-2rem)] max-w-3xl bg-background shadow-lg"
+					>
+						<div
+							class="max-h-[calc(90dvh-1rem)] overflow-y-auto overflow-x-hidden p-4 pt-16 sm:p-6 sm:pt-16"
+						>
+							{@render children?.()}
+						</div>
 						<DialogPrimitive.Close class="nes-btn absolute right-2 top-2">
 							<i class="nes-icon close is-small nes-pointer"></i>
 							<span class="sr-only">Close</span>

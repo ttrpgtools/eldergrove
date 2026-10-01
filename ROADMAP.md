@@ -89,16 +89,16 @@ Verification: 185 tests pass, including 23 new interaction tests covering nested
 
 ## 8. Remaining correctness and polish
 
-- [ ] Require sufficient funds for paid inn services; coin removal currently charges only the available amount while still granting the service.
-- [ ] Implement shop stock and buyback behavior, or remove unsupported `stock`/`willBuy` promises from the model.
-- [ ] Fix appending to a cleared message (`undefined` is currently prefixed) and reset message exclusivity consistently.
-- [ ] Check loot tables with no matching result and define multi-result rewards.
-- [ ] Check inventory ownership, quantities, equipment compatibility, and duplicate item IDs in keyed equipped-item lists (two identical items can occupy different slots).
-- [ ] Remove unused/unfinished utilities after checking their intended role; cached storage effects and FSM debounce cancellation deserve review if retained.
-- [ ] Reduce verbose gameplay logging and expose diagnostics intentionally.
-- [ ] Reserve image dimensions, provide loading/error behavior, and review unnecessary network dependencies.
-- [ ] Improve the fixed square layout for mobile, long text, keyboard navigation, accessibility, and reduced motion.
-- [ ] Consider self-hosting external CSS/fonts/images for predictable availability and privacy; assess CSP once the asset strategy is settled.
+- [x] Require sufficient funds for paid inn services; coin removal currently charges only the available amount while still granting the service.
+- [x] Implement shop stock and buyback behavior, or remove unsupported `stock`/`willBuy` promises from the model.
+- [x] Fix appending to a cleared message (`undefined` is currently prefixed) and reset message exclusivity consistently.
+- [x] Check loot tables with no matching result and define multi-result rewards.
+- [x] Check inventory ownership, quantities, equipment compatibility, and duplicate item IDs in keyed equipped-item lists (two identical items can occupy different slots).
+- [x] Remove unused/unfinished utilities after checking their intended role; cached storage effects and FSM debounce cancellation deserve review if retained.
+- [x] Reduce verbose gameplay logging and expose diagnostics intentionally.
+- [x] Reserve image dimensions, provide loading/error behavior, and review unnecessary network dependencies.
+- [x] Improve the fixed square layout for mobile, long text, keyboard navigation, accessibility, and reduced motion.
+- [x] Consider self-hosting external CSS/fonts/images for predictable availability and privacy; assess CSP once the asset strategy is settled.
 
 ## Separate workstream: adventure content
 
@@ -167,3 +167,18 @@ Dependencies were absent during the original review. After the owner's `npm inst
 - Added 74 runtime tests plus compile-time contract assertions, covering real content/assets, the Discovery potion, scoped extensions, dynamic malformed commands, missing IDs, cycles, table conditions, and bounded deterministic dice. Existing timer/cancellation tests continue to cover interpreter timing. Browser playthrough remains pending; no development server was started.
 - Verification: all 132 tests passed; `npm run check` reported zero errors/warnings; lint, content/asset checks, production build, Svelte autofixer analysis, and `git diff --check` passed. Changes remain uncommitted.
 - Next engine priority: section 6, immutable content and extensible rules.
+
+### 2026-09-30 — remaining correctness and polish
+
+- Enforced full Yearlings inn fees (35 overnight, 5 checkpoint), retaining save-failure refunds. Shops enforce stock and funds, refresh menus after trades, and support one-copy sales with carried quantities. Sales replenish stock and persist through checkpoints. Item `price`/`sellPrice`, optional listing `cost`, `willBuy` permissions/explicit offers, default 50% resale, and global/shop pricing adjustments are documented in `AUTHORING.md`.
+- Fixed cleared-message appending/exclusivity, positive/safe inventory quantities, concurrent inventory merging, canonical item effects, equipment compatibility, and duplicate gear UI keys. Incompatible equipment checkpoints recover to fresh defaults and preserve the original save. Loot grants all matching entries; empty results remain valid. Removed unreferenced unfinished storage/FSM/list utilities and verbose gameplay logs.
+- Self-hosted NES.css and all Press Start 2P font subsets with licenses. Both adventures use the locally saved `rat.webp`. External theme initialization tolerates unavailable storage, and SvelteKit CSP limits resource origins. No service worker/offline precache is introduced.
+- Replaced the fixed square UI with responsive document flow, reserved artwork space and named fallbacks, lazy inventory images, scrolling dialogs, visible keyboard focus, touch-sized controls, and reduced-motion support.
+- Verified the production preview in the browser at 320/390px mobile and 1280px desktop: no horizontal overflow, loaded local artwork, purchases/stock decrement, insufficient-funds rejection, 50% Rapier sale/restocking, inventory focus, Escape, and focus return. No browser errors or CSP warnings. The temporary server was authorized for this verification. Full story playthroughs and Discovery construction remain the separate adventure-content workstream.
+- Verification: 201 regression tests, type checks (zero warnings/errors), and lint passed. Production build and Svelte analysis passed; generic effect suggestions were reviewed and retained for event subscriptions and lifecycle cleanup. Changes remain uncommitted.
+
+- Desktop layout follow-up: restored stretching of the bento grid panels, including matching artwork and description heights and full-height menu/character panels. The stacked mobile layout remains. Verified paired panel bounds in a 1280px desktop browser and no horizontal overflow at 390px; type checks, lint, build, and Svelte analysis passed.
+
+- Desktop proportions correction: the desktop game canvas again uses a bounded square, with an explicit header/artwork/remaining-space grid. Main artwork is always square and fills its frame; the description matches its height, and menu/character panels fill the bottom row. Desktop character spacing is compact; longer content can scroll inside panels without moving the borders. In-app browser measurements verified 320.5px square artwork at 1280×900, 415px square at 1280×1450, and 351px square on mobile without horizontal overflow. Chrome was unavailable to the browser tool, so Chrome-specific verification remains unconfirmed. Type checks, lint, content checks, build, and Svelte analysis passed.
+
+- Desktop scaling correction: removed the introduced 72rem maximum and 48rem minimum, restoring the original uncapped `100vmin` canvas and desktop padding. The banner also scales without its mobile width cap. Square primary artwork, filled bento panels, and the stacked mobile layout remain.

@@ -443,6 +443,16 @@ export async function createGameState(
 			loadNotice = `${reason} A new game is available; the existing checkpoint is protected until you reset this adventure.`;
 		}
 	}
+	let char: Character;
+	try {
+		char = await createNewCharacter(saved?.character ?? definition.baseChar, data.items, rules);
+	} catch (error) {
+		if (!saved) throw error;
+		const reason = error instanceof Error ? error.message : 'Checkpoint equipment is incompatible.';
+		loadNotice = `${reason} A new game is available; the existing checkpoint is protected until you reset this adventure.`;
+		saved = undefined;
+		char = await createNewCharacter(definition.baseChar, data.items, rules);
+	}
 	if (saved) {
 		for (const entry of saved.world.locations) {
 			const location = await data.locations.get(entry.id);
@@ -455,7 +465,6 @@ export async function createGameState(
 			(await data.npcs.get(entry.id)).hp = entry.hp;
 		}
 	}
-	const char = await createNewCharacter(saved?.character ?? definition.baseChar, data.items, rules);
 	const loc = await createLocationManager(data, saved?.location ?? definition.start);
 	if (saved?.previousLocation) loc.previous = await data.locations.get(saved.previousLocation);
 	const npc = createNpcManager(data.npcs);

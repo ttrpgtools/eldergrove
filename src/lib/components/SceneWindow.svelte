@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Artwork from './Artwork.svelte';
 	import type { Choice } from '$lib/types';
 	import NavigateMenu from './NavigateMenu.svelte';
 	import { hasHp } from '$util/validate';
@@ -47,7 +48,9 @@
 	});
 </script>
 
-<div class="pixel-corners--wrapper col-span-3 row-span-3">
+<div
+	class="pixel-corners--wrapper aspect-square w-full min-w-0 md:col-span-3 md:h-auto md:min-h-0 md:self-start"
+>
 	{#if entity}
 		{#if crossOut}
 			<svg class="absolute z-10 size-full opacity-50">
@@ -63,27 +66,37 @@
 				{floatNpc.label}
 			</div>
 		{/if}
-		<img src={entity.image ?? gamestate.location.current.image} alt={entity.name} />
+		<Artwork
+			src={entity.image ?? gamestate.location.current.image}
+			alt={entity.name}
+			class="absolute inset-0 aspect-auto h-full"
+			fit="cover"
+			eager
+		/>
 	{/if}
 </div>
-<div class="pixel-corners col-span-5 row-span-3 p-4">
-	{#if entity}
-		{#if hasHp(entity)}
-			<p class="mb-3 flex justify-between text-xl">
-				<span>{npcLabel(entity)}</span>
-				<span>{entity.hp} / {entity.maxHp}</span>
-			</p>
-		{:else if !gamestate.location.nameAlreadyShown(entity.name)}
-			<p class="mb-3 text-xl">{entity.name}</p>
+<div class="pixel-corners min-w-0 break-words p-4 md:col-span-5 md:min-h-0">
+	<div class="md:h-full md:overflow-y-auto md:overflow-x-hidden">
+		{#if entity}
+			{#if hasHp(entity)}
+				<p class="mb-3 flex flex-wrap justify-between gap-2 text-base md:text-xl">
+					<span>{npcLabel(entity)}</span>
+					<span>{entity.hp} / {entity.maxHp}</span>
+				</p>
+			{:else if !gamestate.location.nameAlreadyShown(entity.name)}
+				<p class="mb-3 text-xl">{entity.name}</p>
+			{/if}
+			{#if showDesc}<p class="mb-6 text-gray-300">{entity.desc}</p>{/if}
+			{#if gamestate.message.text}
+				<p class="">{gamestate.message.text}</p>
+			{/if}
 		{/if}
-		{#if showDesc}<p class="mb-6 text-gray-300">{entity.desc}</p>{/if}
-		{#if gamestate.message.text}
-			<p class="">{gamestate.message.text}</p>
-		{/if}
-	{/if}
+	</div>
 </div>
-<div class="pixel-corners col-span-3 row-span-5 flex flex-col gap-2 p-4">
-	<NavigateMenu {gamestate} {onact} />
+<div class="pixel-corners min-w-0 p-4 md:col-span-3 md:min-h-0">
+	<div class="flex flex-col gap-3 md:h-full md:overflow-y-auto md:overflow-x-hidden">
+		<NavigateMenu {gamestate} {onact} />
+	</div>
 </div>
 
 <style>

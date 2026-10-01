@@ -49,6 +49,7 @@ export interface DeathRules {
 	onDeath?: Actions;
 }
 export interface GameRules {
+	trade: { purchaseMultiplier: number; saleRatio: number };
 	combat: CombatRules;
 	equipment: EquipmentRules;
 	progression: ProgressionRules;
@@ -70,6 +71,7 @@ function defaultSlots(item: Item): (keyof Gear)[] {
 	);
 }
 const defaults: GameRules = {
+	trade: { purchaseMultiplier: 1, saleRatio: 0.5 },
 	combat: {
 		unarmed: { amt: 'd4 + [@str]', type: 'blunt' },
 		npcAttack: 'd[#maxhp]-0.5*([@armor]+[@dex])',
@@ -121,6 +123,7 @@ export function defineRuleModule(id: string, rules: RuleOverrides): RuleModule {
 /** Ordered modules compose per session; direct adventure overrides take precedence. */
 export function resolveRules(game: Pick<GameDef, 'rules' | 'ruleModules'>): GameRules {
 	const rules: GameRules = {
+		trade: { ...DEFAULT_RULES.trade },
 		combat: { ...DEFAULT_RULES.combat },
 		equipment: { ...DEFAULT_RULES.equipment },
 		progression: { ...DEFAULT_RULES.progression },
@@ -146,6 +149,7 @@ export function resolveRules(game: Pick<GameDef, 'rules' | 'ruleModules'>): Game
 			const group = key as keyof GameRules;
 			const fields = object(source[group], `rules.${group}`);
 			const allowed: Record<keyof GameRules, string[]> = {
+				trade: ['purchaseMultiplier', 'saleRatio'],
 				combat: [
 					'unarmed',
 					'npcAttack',
@@ -166,6 +170,8 @@ export function resolveRules(game: Pick<GameDef, 'rules' | 'ruleModules'>): Game
 		}
 		if (source.progression?.maxLevel !== undefined) explicitMaximum = source.progression.maxLevel;
 	}
+	number(rules.trade.purchaseMultiplier, 'trade.purchaseMultiplier', 0, 100);
+	number(rules.trade.saleRatio, 'trade.saleRatio', 0, 100);
 	const progression = rules.progression;
 	array(progression.thresholds, 'progression.thresholds');
 	if (progression.thresholds.length > 999)

@@ -8,10 +8,11 @@ export class Messanger {
 	}
 
 	append(text: string) {
-		this.text += ((this.text?.length ?? 0) > 0 ? ' ' : '') + text;
+		this.text = [this.text, text.trim()].filter(Boolean).join(' ');
 	}
 
 	clear() {
 		this.text = undefined;
+		this.exclusive = false;
 	}
 }

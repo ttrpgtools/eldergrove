@@ -12,7 +12,7 @@
 	const item = $derived(gamestate.character.gear[where]);
 </script>
 
-<p class="-mx-1 flex items-center gap-4 px-1 py-2 hover:bg-neutral-800">
+<p class="-mx-1 flex items-center gap-4 px-1 py-2 hover:bg-neutral-800 md:py-1">
 	<Icon {icon} class={`size-6 ${flip ? `-scale-x-100` : ''}`} />
 	{item?.name ?? '(None)'}
 	{#if item != null}

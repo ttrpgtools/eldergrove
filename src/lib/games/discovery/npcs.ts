@@ -4,7 +4,7 @@ export const npcTemplates: NpcTemplate[] = [
 	{
 		id: 'rat',
 		name: 'rat',
-		image: 'https://assets.codepen.io/2292558/ratt.webp',
+		image: '/img/npc/rat.webp',
 		desc: 'It definitely sees you. You might want to hurry.',
 		maxHp: 5,
 		coins: 5,

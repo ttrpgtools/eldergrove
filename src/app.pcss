@@ -225,3 +225,35 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+/* Keep long scenes readable on small screens, and make keyboard focus explicit. */
+.font-game {
+	font-size: 0.75rem;
+	line-height: 1.7;
+}
+@media (min-width: 768px) {
+	.font-game {
+		font-size: 0.875rem;
+	}
+}
+button,
+a {
+	touch-action: manipulation;
+}
+button:focus-visible,
+a:focus-visible {
+	outline: 3px solid #34d399;
+	outline-offset: 4px;
+}
+img {
+	max-width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

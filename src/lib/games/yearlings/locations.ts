@@ -293,8 +293,16 @@ export const locations: Location[] = [
 						action: 'yesno',
 						arg: {
 							yes: [
-								{ action: 'coinsRemove', arg: 35 },
-								{ action: (gs: GameState) => hpHeal(gs, gs.character.maxHp - gs.character.hp) }
+								{
+									action: async (gs: GameState) => {
+										if (gs.character.coin < 35) {
+											gs.message.set('You need 35 coins to spend the night.');
+											return;
+										}
+										gs.character.coin -= 35;
+										await hpHeal(gs, gs.character.maxHp - gs.character.hp);
+									}
+								}
 							],
 							no: []
 						}
@@ -311,7 +319,11 @@ export const locations: Location[] = [
 							yes: [
 								{
 									action: async (gs: GameState) => {
-										const fee = Math.min(gs.character.coin, 5);
+										if (gs.character.coin < 5) {
+											gs.message.set('You need 5 coins to save here.');
+											return;
+										}
+										const fee = 5;
 										gs.character.coin -= fee;
 										if (await gs.save()) {
 											gs.message.set(

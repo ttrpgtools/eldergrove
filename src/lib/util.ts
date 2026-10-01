@@ -39,7 +39,10 @@ export const flyAndScale = (
 	};
 
 	return {
-		duration: params.duration ?? 200,
+		duration:
+			typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+				? 0
+				: (params.duration ?? 200),
 		delay: 0,
 		css: (t) => {
 			const y = scaleConversion(t, [0, 1], [params.y ?? 5, 0]);

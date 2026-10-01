@@ -1,7 +1,6 @@
 import { DEFAULT_RULES, GEAR_SLOTS, validateGains, type GameRules } from '$lib/rules';
 import { integer } from '$lib/contracts';
 import type { CharDef, Gear, InventoryItem, Item } from '$lib/types';
-import { evaluateDiceRoll, rollFormula } from '$util/dice';
 import { defined } from '$util/array';
 import { SvelteSet, SvelteMap } from 'svelte/reactivity';
 import type { DataManager } from '$data/index';
@@ -21,9 +20,6 @@ export async function createNewCharacter(
 	newHero.wil = baseChar.wil;
 	newHero.xp = baseChar.xp;
 	newHero.level = baseChar.level;
-	for await (const item of baseChar.equip) {
-		await newHero.equipItem(item[0], item[1]);
-	}
 	for await (const item of baseChar.inventory) {
 		await newHero.addToInventory(item[0], item[1]);
 	}
@@ -36,6 +32,9 @@ export async function createNewCharacter(
 		for (const [k, v] of baseChar.counters) {
 			newHero.counters.set(k, v);
 		}
+	}
+	for await (const item of baseChar.equip) {
+		await newHero.equipItem(item[0], item[1]);
 	}
 	return newHero;
 }
@@ -97,17 +96,6 @@ export class Character {
 		this.hp = Math.min(this.maxHp, this.hp + amt);
 	}
 
-	inflictDamage(formula: string, ctx: Record<string, number>) {
-		// TODO: figure this out
-		const damage = Math.max(evaluateDiceRoll(formula, ctx), 0);
-		const toHit = rollFormula('d6');
-		if (toHit >= 3) {
-			this.hp = Math.max(0, this.hp - damage);
-			return damage;
-		}
-		return 0;
-	}
-
 	gainExperience(amount: number) {
 		integer(amount, 'experience');
 		const xp = integer(this.xp + amount, 'experience total');
@@ -137,18 +125,29 @@ export class Character {
 		if (typeof item !== 'string') {
 			item = item.id;
 		}
-		// TODO Handle item stacks
 		return this.inventory.findIndex((listing) => listing.item.id === item);
 	}
 
 	async addToInventory(item: Item | string, quantity = 1) {
+		integer(quantity, 'inventory quantity', 1);
 		const existing = this.#getInventoryItem(item);
 		if (existing >= 0) {
-			this.inventory[existing].quantity += quantity;
+			this.inventory[existing].quantity = integer(
+				this.inventory[existing].quantity + quantity,
+				'inventory total',
+				1
+			);
 			return;
 		}
-		if (typeof item === 'string') {
-			item = await this.#items.get(item);
+		item = await this.#items.get(typeof item === 'string' ? item : item.id);
+		const concurrent = this.#getInventoryItem(item);
+		if (concurrent >= 0) {
+			this.inventory[concurrent].quantity = integer(
+				this.inventory[concurrent].quantity + quantity,
+				'inventory total',
+				1
+			);
+			return;
 		}
 		this.inventory.push({ item, quantity });
 	}
@@ -159,6 +158,7 @@ export class Character {
 	}
 
 	removeFromInventory(item: Item | string, quantity = 1) {
+		integer(quantity, 'inventory quantity', 1);
 		const existing = this.#getInventoryItem(item);
 		if (existing === -1) {
 			return 0;
@@ -173,14 +173,19 @@ export class Character {
 	}
 
 	async equipItem(item: Item | string, where: keyof Gear) {
-		if (typeof item === 'string') {
-			item = await this.#items.get(item);
-		}
+		if (!GEAR_SLOTS.includes(where)) throw new Error('Invalid equipment slot.');
+		item = await this.#items.get(typeof item === 'string' ? item : item.id);
+		if (
+			!this.rules.equipment.slots(item, this).includes(where) ||
+			this.rules.equipment.canEquip(this, item, where) !== true
+		)
+			throw new Error('Item cannot be equipped in this slot.');
 		this.gear[where] = item;
 	}
 
 	async autoEquip(item: Item | undefined) {
 		if (!item || this.getInventoryCount(item) < 1) return;
+		item = await this.#items.get(item.id);
 		const slots = this.rules.equipment.slots(item, this);
 		if (!Array.isArray(slots) || slots.some((slot) => !GEAR_SLOTS.includes(slot)))
 			throw new Error('Invalid equipment slots.');
@@ -193,22 +198,23 @@ export class Character {
 		// Set to first unoccupied slot
 		const unoccupied = attempted.find((eqs) => !this.gear[eqs]);
 		if (unoccupied) {
-			await this.equipItem(item, unoccupied);
+			this.gear[unoccupied] = item;
 			this.removeFromInventory(item);
 			return unoccupied;
 		}
 		const preferred = attempted[0];
 		await this.unequip(preferred);
 		this.removeFromInventory(item);
-		await this.equipItem(item, preferred);
+		this.gear[preferred] = item;
 		return preferred;
 	}
 
 	async unequip(where: keyof Gear) {
+		if (!GEAR_SLOTS.includes(where)) throw new Error('Invalid equipment slot.');
 		const item = this.gear[where];
 		if (item) {
-			this.gear[where] = undefined;
 			await this.addToInventory(item);
+			this.gear[where] = undefined;
 		}
 	}
 

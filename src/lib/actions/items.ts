@@ -20,6 +20,7 @@ export async function inventoryRemove(state: GameState, item: Item | string) {
 }
 
 export async function itemUse(state: GameState, item: Item | undefined) {
+	if (item) item = await state.data.items.get(item.id);
 	if (
 		!item ||
 		!state.canUseInventory ||

@@ -14,7 +14,13 @@
 </script>
 
 {#each available as option (option)}
-	<button type="button" class="nes-btn" disabled={gamestate.busy} onclick={() => onact(option)}
-		>{option.label}</button
+	<button
+		type="button"
+		class="nes-btn min-h-11 break-words text-left"
+		disabled={gamestate.busy}
+		onclick={() => onact(option)}
+		>{option.label}{#if option.description}<span class="mt-2 block text-xs opacity-75"
+				>{option.description}</span
+			>{/if}</button
 	>
 {/each}

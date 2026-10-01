@@ -69,7 +69,7 @@ Table `active` conditions require game state, with optional action context:
 rollOnTable(table, { state, ctx: state.actionContext });
 ```
 
-Inactive entries do not renumber ranges or trigger a reroll. A rolled range with no active match returns an empty array. Overlapping ranges can return multiple matches; encounter and loot consumers currently use the first result. General multi-result loot rules remain future work.
+Inactive entries do not renumber ranges or trigger a reroll. A rolled range with no active match returns an empty array. Overlapping ranges can return multiple matches; encounters use the first result, while `npcLoot` grants every matching item, including repeated IDs as separate copies. An empty loot result still grants the NPC’s coins and experience.
 
 ## Content checks and unfinished content
 
@@ -117,7 +117,7 @@ const training = author.registerRules('my-game/training', {
 The rule groups are:
 
 - `combat`: unarmed damage formula/type, natural NPC attack formula, retaliation delay, weapon selection, armor calculation, and character/NPC defence hooks. Selection, armor, and defence hooks are synchronous. Armor and returned damage must be finite; damage is truncated to an integer and clamped at zero. Default weapon selection finds an actual weapon in either hand; default armor comes from the torso. NPC `effects` still replace a natural attack.
-- `equipment`: synchronous `slots(item, character)` and `canEquip(character, item, slot)` hooks for automatic player equipment. Only supported gear slots are accepted, and the item must be owned. Starting/restored equipment uses the validated checkpoint definition; these hooks do not silently remove existing gear.
+- `equipment`: synchronous `slots(item, character)` and `canEquip(character, item, slot)` hooks for automatic player equipment. Only supported gear slots are accepted, and the item must be owned. Starting and restored equipment also checks slot compatibility and `canEquip`, after character stats, inventory, flags, and counters are initialized. An incompatible checkpoint starts a fresh session with a notice and protects the original save until Reset. Keep these hooks synchronous and free of mutations.
 - `progression`: strictly increasing, nonnegative integer total-XP thresholds, optional maximum level, and a gain object or synchronous `gains(newLevel)` hook. Levels are one-based: threshold index 0 unlocks level 2. Equality reaches the level; a reward applies every crossed level. The default maximum is the number of thresholds plus one; an explicit lower cap is supported. An empty threshold list gives a single level. XP remains accumulated at the cap. Gains support `str`, `dex`, `wil`, and `maxHp`, each a nonnegative integer. Gains are validated before applying the reward, and increases in maximum HP do not heal current HP. Defaults retain Yearlings' thresholds and +2 strength, +2 dexterity, +8 maximum HP, ending at level 16.
 - `encounters`: synchronous `streakKey(state)` returning a nonempty string or `undefined` to disable counters, `resetOnRun`, and optional `onFinish` actions. The default is a location-specific win counter reset on running. Finish actions receive the encounter result in context after the old encounter has been cleaned up, before its supplied follow-up.
 - `death`: optional scene item, message, and `onDeath` actions. Combat calls `state.die(reason?)`; adventure hazards can call it too. It sets HP to zero and marks the context as a defeat. A hook may revive the character; otherwise recovery choices reload the existing checkpoint or explicitly discard only this adventure's checkpoint and restart. Failed death hooks still present recovery. Yearlings configures its existing artwork; Discovery uses the generic scene. A supplied reason takes precedence over the configured message.
@@ -173,6 +173,38 @@ Items can specify `combatUse: 'turn' | 'free' | 'forbidden'`. The default is `tu
 
 Damage from effects passes through the defence hooks. A killing item resolves victory immediately and skips retaliation; lethal character effects trigger recovery both inside and outside combat. Enemy effects are also checked for terminal outcomes. If an item opens a continuation prompt, the pending turn waits until the prompts are answered and combat becomes active again; roll context remains attached. Travel, replacement encounters, or death discard that old pending turn. Interrupted retaliation retains the consumed item and completed player effects without queuing another retaliation. Effects that throw still resolve terminal health outcomes; they do not trigger retaliation.
 
-Transient interactions are not checkpoints. Saving is allowed only in living exploration without an active NPC/item scene. Shop stock/buyback enforcement, keyed duplicate equipment, and other remaining polish are separate roadmap items.
+Transient interactions are not checkpoints. Saving is allowed only in living exploration without an active NPC/item scene. Checkpoints retain current shop stock, including items replenished through sales.
 
 `state.interactions`, `choices`, `item`, and raw manager mutations remain available for legacy trusted hooks. They are implementation escape hatches, not the supported authoring surface: raw stack changes bypass mode ownership, lifecycle cleanup, and pending-turn handling. New content should use requests/declarative actions and await nested actions. These APIs preserve the existing trusted-code model; they do not sandbox executable adventures.
+
+## Shop prices and stock
+
+Items may define integer `price` (purchase base) and `sellPrice` (sale base). Each location’s shop listing has `item`, integer `stock`, optional `cost`, and optional `willBuy`. Listing `cost` overrides item `price`; at least one purchase base is required. Zero prices and zero stock are valid. Each purchase consumes one unit of stock; selling adds one. Stock persists in checkpoints and resets with a new game.
+
+`willBuy: true` permits sales using the item’s `sellPrice`, or otherwise `rules.trade.saleRatio` times its `price` (falling back to listing `cost` for legacy items). The default ratio is `0.5`. A numeric `willBuy` sets an explicit sale base; `false` or omission disables sales. Only items listed by that shop can be sold. Sales consume one carried copy; equipped copies must first be unequipped.
+
+Purchase prices multiply the base by `rules.trade.purchaseMultiplier` (default `1`) and the location’s `trade.purchaseMultiplier` (default `1`). Sale prices multiply the sale base by the location’s `trade.saleMultiplier` (default `1`). Multipliers range from `0` to `100`; final prices round down to whole coins. The sale ratio applies only when no explicit sale base exists. These settings allow authors to choose their economy, including intentionally profitable resale prices.
+
+```ts
+const potion = {
+	id: 'potion',
+	name: 'Potion',
+	type: 'consumable',
+	price: 20,
+	sellPrice: 8
+} satisfies Item;
+const shop = {
+	id: 'market',
+	name: 'Market',
+	biome: 'town',
+	trade: { purchaseMultiplier: 1.1, saleMultiplier: 0.75 },
+	shop: [{ item: 'potion', stock: 5, willBuy: true }]
+} satisfies Location;
+// Buy for 22; sell for 6. A listing cost or numeric willBuy overrides the base.
+```
+
+## Local assets and presentation
+
+NES.css and Press Start 2P are served from `static/vendor`, with their licenses and provenance alongside them. Adventure images live in `static/img`, including the shared rat at `/img/npc/rat.webp`. The main scene reserves a square image frame, inventory images load lazily, and unavailable artwork falls back to its name. The layout stacks on mobile and supports scrolling dialogs, keyboard focus, and reduced motion preferences.
+
+The application sets a [SvelteKit CSP](https://svelte.dev/docs/kit/configuration#csp) allowing resources from its own origin and inline style attributes needed by Svelte transitions. Scripts use SvelteKit’s automatic hashes/nonces; object embedding and framing are blocked. Content validation still accepts HTTP(S) image paths, but using an external image requires explicitly allowing its origin in `svelte.config.js`. Trusted TypeScript adventures remain executable application code, not a sandbox. Self-hosting removes these external asset requests; it does not provide an offline service worker or preload every adventure image.

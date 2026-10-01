@@ -36,16 +36,18 @@
 
 <svelte:window onkeyup={konamiCode(() => (cheatmode = true))} />
 
-<div class="pixel-corners col-span-5 row-span-5 p-4">
-	<div class="grid grid-cols-3">
+<div class="pixel-corners min-w-0 p-4 md:col-span-5 md:min-h-0">
+	<div
+		class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3 md:h-full md:content-start md:overflow-y-auto md:overflow-x-hidden"
+	>
 		{#snippet stat(icon: string, label: string | number)}
 			<p class="flex items-center gap-4">
 				<Icon {icon} class="size-6" />
 				{label}
 			</p>
 		{/snippet}
-		<div class="col-span-2 flex flex-col gap-3">
-			<p class="nes-text is-primary mb-2 text-xl">{character.name}</p>
+		<div class="flex flex-col gap-3 sm:col-span-2 md:gap-2">
+			<p class="nes-text is-primary mb-2 break-words text-base md:text-xl">{character.name}</p>
 			{@render stat('heart', fullHp)}
 			{@render stat('coins', character.coin)}
 			{@render stat('star', character.xp)}
@@ -70,8 +72,8 @@
 				onclick={() => gamestate.reset()}>Reset</button
 			>
 		</div>
-		<div class="col-span-3">
-			<p class="nes-text is-primary my-2 text-xl">Equipped</p>
+		<div class="sm:col-span-3">
+			<p class="nes-text is-primary my-2 text-xl md:my-1">Equipped</p>
 			<GearSlot {gamestate} where="right" icon="hand" flip />
 			<GearSlot {gamestate} where="left" icon="hand" />
 			<GearSlot {gamestate} where="head" icon="head" />

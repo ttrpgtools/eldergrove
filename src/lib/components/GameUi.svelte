@@ -12,7 +12,7 @@
 	});
 </script>
 
-<div class="flex h-full flex-col">
+<div class="flex min-h-dvh flex-col md:h-full md:min-h-0">
 	{#if gamestate.saveNotice}
 		<p role="status" class="mx-2 mt-2 border border-amber-400 bg-black p-2 text-xs text-amber-200">
 			{gamestate.saveNotice}
@@ -23,9 +23,18 @@
 			{gamestate.commandNotice}
 		</p>
 	{/if}
-	<main aria-busy={gamestate.busy} class="grid min-h-0 flex-1 grid-cols-8 grid-rows-8 gap-2 p-2">
-		<div class=" col-span-3 flex items-center justify-center">
-			<img src="/img/eldergrove-banner.webp" alt="Eldergrove" />
+	<main
+		aria-busy={gamestate.busy}
+		class="grid min-h-0 min-w-0 flex-1 grid-cols-1 items-start gap-3 p-3 md:grid-cols-8 md:grid-rows-[auto_auto_minmax(0,1fr)] md:items-stretch md:gap-2 md:p-2"
+	>
+		<div class="flex min-h-0 min-w-0 items-center justify-center md:col-span-3">
+			<img
+				src="/img/eldergrove-banner.webp"
+				alt="Eldergrove"
+				width="1024"
+				height="341"
+				class="h-auto w-full max-w-sm md:max-h-full md:max-w-none md:object-contain"
+			/>
 		</div>
 		<Location location={gamestate.location} />
 		<SceneWindow {gamestate} />

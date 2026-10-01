@@ -17,6 +17,7 @@ export interface Entity extends Identifiable, Named {
 
 export interface Choice {
 	label: string;
+	description?: string;
 	show?: Condition;
 	actions: Actions;
 }
@@ -28,6 +29,8 @@ export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
 export type EquipSlot = 'hand' | 'torso' | 'head' | 'feet';
 
 interface BaseItem extends Entity {
+	price?: number;
+	sellPrice?: number;
 	combatUse?: 'turn' | 'free' | 'forbidden';
 	rarity?: 'common' | 'rare' | 'mythical' | 'unique';
 }
@@ -65,7 +68,7 @@ export type Gear = {
 export interface ShopItem {
 	item: string | Item;
 	stock: number;
-	cost: number;
+	cost?: number;
 	willBuy?: number | boolean;
 }
 
@@ -101,6 +104,7 @@ export interface NpcInstance extends NpcTemplate {
 }
 
 export interface Location extends AdvancedEntity {
+	trade?: { purchaseMultiplier?: number; saleMultiplier?: number };
 	biome: string;
 	choices?: Choice[];
 	parent?: string;

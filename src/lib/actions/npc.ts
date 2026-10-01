@@ -27,7 +27,7 @@ export async function npcHeal(
 ) {
 	const amt = resolveNumber(value, ctx);
 	if (state.npc.current) {
-		state.npc.current.hp = Math.min(state.npc.current.maxHp, state.npc.current.hp + amt);
+		state.npc.current.hp = Math.min(state.npc.current.maxHp, state.npc.current.hp + minZero(amt));
 	}
 }
 
@@ -40,11 +40,10 @@ export async function npcLoot(state: GameState) {
 		state.message.append(` You found ${coin} coins and earned ${npc.exp} experience.`);
 		if (npc.items) {
 			const itemId = rollOnTable(npc.items, { state, ctx: state.actionContext });
-			// No matching/active loot entry is a valid empty result. Multi-result handling is separate.
-			if (itemId[0] !== undefined) {
-				const item = await state.data.items.get(itemId[0]);
+			const loot = await Promise.all(itemId.map((id) => state.data.items.get(id)));
+			for (const item of loot) {
 				await state.character.addToInventory(item);
-				state.message.append(` You also found: ${item.name}.`);
+				state.message.append(`You also found: ${item.name}.`);
 			}
 		}
 		if (leveled) {
