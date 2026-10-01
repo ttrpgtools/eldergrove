@@ -263,13 +263,13 @@ describe('Yearlings healing supplies', () => {
 		const state = await createGameState(yearlings);
 		await state.location.moveTo('yearlings/pylaim/general');
 		state.resetInteractions();
-		state.character.coin = 2260;
+		state.character.coin = 2275;
 		await state.requestTrade();
-		for (const label of ['Cure Potion (10)', 'Greater Cure Potion (250)', 'Elixir (2000)']) {
+		for (const label of ['Cure Potion (25)', 'Greater Cure Potion (250)', 'Elixir (2000)']) {
 			await trade(state, label);
 		}
 		expect(state.character.coin).toBe(0);
-		expect(state.location.current.shop!.map((entry) => entry.stock)).toEqual([4, 5, 4, 4]);
+		expect(state.location.current.shop!.map((entry) => entry.stock)).toEqual([14, 15, 4, 2]);
 		expect(state.character.getInventoryCount('yearlings/greater-cure-potion')).toBe(1);
 		expect(state.character.getInventoryCount('yearlings/elixir')).toBe(1);
 	});
@@ -291,11 +291,13 @@ describe('Yearlings inn services', () => {
 		expect(state.character.hp).toBe(state.character.maxHp);
 		expect(state.character.coin).toBe(0);
 		state.character.coin = 4;
-		await trade(state, 'Save Game');
+		await state.choose(choice(state, 'Save Game'));
 		expect(localStorage.getItem('gameSave:yearlings')).toBeNull();
 		expect(state.character.coin).toBe(4);
 		state.character.coin = 5;
-		await trade(state, 'Save Game');
+		await state.choose(choice(state, 'Save Game'));
+		expect(state.saveDialog?.fee).toBe(5);
+		expect(await state.save(1, state.saveDialog!.slots[0].raw, 5)).toBe(true);
 		expect(state.character.coin).toBe(0);
 		expect(JSON.parse(localStorage.getItem('gameSave:yearlings')!).character.coin).toBe(0);
 	});

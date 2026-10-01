@@ -318,8 +318,8 @@ describe('item combat turns', () => {
 		expect(state.item.depth).toBe(1);
 		expect(state.scene.id).toBe('engine/death');
 		expect(state.availableChoices.map((choice) => choice.label)).toEqual([
-			'Return to checkpoint',
-			'Start over'
+			'Load a saved game',
+			'Start a new game'
 		]);
 	});
 	it('detects lethal item effects outside combat', async () => {

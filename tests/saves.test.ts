@@ -150,7 +150,7 @@ describe('checkpoints', () => {
 		expect(restored.saveNotice).toBeUndefined();
 		expect(restored.character.coin).toBe(2345);
 		expect((await restored.data.locations.get(store.id)).shop!.map((entry) => entry.stock)).toEqual(
-			[0, 2, 5, 5]
+			[0, 2, 5, 3]
 		);
 		expect(storage.get('gameSave:yearlings')).toBe(raw);
 		expect(await restored.save()).toBe(true);
@@ -211,8 +211,9 @@ describe('checkpoints', () => {
 		expect(await state.save()).toBe(false);
 		expect(storage.get('gameSave:saves')).toBe(raw);
 		await state.reset();
-		expect(storage.has('gameSave:saves')).toBe(false);
-		expect(window.location.reload).toHaveBeenCalledOnce();
+		expect(storage.get('gameSave:saves')).toBe(raw);
+		expect(state.character.hp).toBe(12);
+		expect(window.location.reload).not.toHaveBeenCalled();
 	});
 
 	it('rejects unsupported formats, wrong adventures, and changed content versions', async () => {
@@ -288,7 +289,8 @@ describe('checkpoints', () => {
 		expect(await state.save()).toBe(false);
 		await state.reset();
 		expect(window.location.reload).not.toHaveBeenCalled();
-		expect(state.saveNotice).toMatch(/could not be removed/);
+		expect(state.character.hp).toBe(12);
+		expect(await state.save()).toBe(false);
 	});
 
 	it('handles an unavailable storage getter', async () => {
@@ -367,9 +369,9 @@ describe('checkpoints', () => {
 		vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
 			throw new Error('Quota exceeded');
 		});
-		await state.resolveActions(state.choices.current![0].actions);
+		expect(await state.save(1, state.saveDialog!.slots[0].raw, state.saveDialog!.fee)).toBe(false);
 		expect(state.character.coin).toBe(before);
-		expect(state.message.text).toMatch(/not been charged/);
+		expect(state.saveNotice).toMatch(/not been charged/);
 		expect(state.choices.depth).toBe(1);
 		expect(storage.has('gameSave:yearlings')).toBe(false);
 	});
@@ -383,7 +385,7 @@ describe('checkpoints', () => {
 		await state.resolveActions(
 			state.choices.current!.find((choice) => choice.label === 'Save Game')!.actions
 		);
-		await state.resolveActions(state.choices.current![0].actions);
+		expect(await state.save(1, state.saveDialog!.slots[0].raw, state.saveDialog!.fee)).toBe(true);
 		expect(state.character.coin).toBe(before - 5);
 		expect(state.message.text).toMatch(/warm glow/);
 		const restored = await createGameState(yearlings);

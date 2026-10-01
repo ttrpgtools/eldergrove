@@ -7,8 +7,11 @@
 		ref = $bindable(null),
 		class: className,
 		children,
+		hideClose = false,
 		...restProps
-	}: Omit<DialogPrimitive.ContentProps, 'child' | 'forceMount'> = $props();
+	}: Omit<DialogPrimitive.ContentProps, 'child' | 'forceMount'> & {
+		hideClose?: boolean;
+	} = $props();
 </script>
 
 <Dialog.Portal>
@@ -25,14 +28,16 @@
 						class="pixel-corners relative max-h-[90dvh] w-[calc(100%-2rem)] max-w-3xl bg-background shadow-lg"
 					>
 						<div
-							class="max-h-[calc(90dvh-1rem)] overflow-y-auto overflow-x-hidden p-4 pt-16 sm:p-6 sm:pt-16"
+							class="max-h-[calc(90dvh-1rem)] overflow-y-auto overflow-x-hidden p-4 pt-8 sm:p-6 sm:pt-8"
 						>
 							{@render children?.()}
 						</div>
-						<DialogPrimitive.Close class="nes-btn absolute right-2 top-2">
-							<i class="nes-icon close is-small nes-pointer"></i>
-							<span class="sr-only">Close</span>
-						</DialogPrimitive.Close>
+						{#if !hideClose}
+							<DialogPrimitive.Close class="nes-btn absolute right-2 top-2">
+								<i class="nes-icon close is-small nes-pointer"></i>
+								<span class="sr-only">Close</span>
+							</DialogPrimitive.Close>
+						{/if}
 					</div>
 				</div>
 			{/if}

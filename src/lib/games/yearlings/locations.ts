@@ -313,37 +313,7 @@ export const locations: Location[] = [
 			},
 			{
 				label: 'Save Game',
-				actions: [
-					{ action: 'messageSet', arg: `Costs 5 coins, ok?` },
-					{
-						action: 'yesno',
-						arg: {
-							yes: [
-								{
-									action: async (gs: GameState) => {
-										if (gs.character.coin < 5) {
-											gs.message.set('You need 5 coins to save here.');
-											return;
-										}
-										const fee = 5;
-										gs.character.coin -= fee;
-										if (await gs.save()) {
-											gs.message.set(
-												`A warm glow passes over you as your vitals are scanned. If you die, you will return here as you are now.`
-											);
-										} else {
-											gs.character.coin += fee;
-											gs.message.set(
-												'Your checkpoint could not be saved. You have not been charged.'
-											);
-										}
-									}
-								}
-							],
-							no: []
-						}
-					}
-				]
+				actions: (gs) => gs.requestSave(5)
 			},
 			{
 				label: 'Leave Inn',

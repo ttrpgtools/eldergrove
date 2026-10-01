@@ -2,6 +2,7 @@
 	import Icon from '$ui/Icon.svelte';
 	import GearSlot from './GearSlot.svelte';
 	import Inventory from './Inventory.svelte';
+	import * as Dialog from '$ui/dialog';
 	import type { GameState } from '$state/game.svelte';
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
@@ -10,6 +11,21 @@
 	let { gamestate }: { gamestate: GameState } = $props();
 	const character = $derived(gamestate.character);
 	let inventoryOpen = $state(false);
+	let nameOpen = $state(false);
+	let draftName = $state('');
+	let nameError = $state('');
+	async function saveName(event: SubmitEvent) {
+		event.preventDefault();
+		const name = draftName.trim();
+		if (!name) {
+			nameError = 'Enter a character name.';
+			return;
+		}
+		const result = await gamestate.runCommand(() => {
+			character.name = name;
+		});
+		if (result === 'completed') nameOpen = false;
+	}
 	let cheatmode = $state(false);
 	let fullHp = $derived(`${character.hp}/${character.maxHp}`);
 
@@ -47,7 +63,18 @@
 			</p>
 		{/snippet}
 		<div class="flex flex-col gap-3 sm:col-span-2 md:gap-2">
-			<p class="nes-text is-primary mb-2 break-words text-base md:text-xl">{character.name}</p>
+			<button
+				type="button"
+				class="nes-text is-primary nes-pointer mb-2 min-h-11 break-words text-left text-base hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 md:text-xl"
+				disabled={gamestate.busy || !!gamestate.saveDialog}
+				aria-label={`Change character name (${character.name})`}
+				title="Change character name"
+				onclick={() => {
+					draftName = character.name;
+					nameError = '';
+					nameOpen = true;
+				}}>{character.name}</button
+			>
 			{@render stat('heart', fullHp)}
 			{@render stat('coins', character.coin)}
 			{@render stat('star', character.xp)}
@@ -67,9 +94,15 @@
 				>{/if}
 			<button
 				type="button"
-				class="nes-btn is-error"
+				class="nes-btn"
 				disabled={gamestate.busy}
-				onclick={() => gamestate.reset()}>Reset</button
+				onclick={() => gamestate.requestLoad()}>Load Game</button
+			>
+			<button
+				type="button"
+				class="nes-btn"
+				disabled={gamestate.busy}
+				onclick={() => gamestate.requestNewGame()}>New Game</button
 			>
 		</div>
 		<div class="sm:col-span-3">
@@ -91,6 +124,49 @@
 	{/if}
 </div>
 <Inventory {gamestate} bind:open={inventoryOpen} />
+
+<Dialog.Root bind:open={nameOpen}>
+	<Dialog.Content>
+    <Dialog.Header>
+		<Dialog.Title>Change character name</Dialog.Title>
+    </Dialog.Header>
+		<form onsubmit={saveName} class="flex flex-col gap-4">
+			<label for="character-name" class="text-sm">Character name</label>
+			<input
+				id="character-name"
+				name="character-name"
+				class="nes-input w-full bg-background text-foreground"
+				bind:value={draftName}
+				maxlength="40"
+				required
+				autocomplete="off"
+				aria-invalid={nameError ? 'true' : undefined}
+				aria-describedby={nameError ? 'character-name-error' : undefined}
+				oninput={() => {
+					nameError = '';
+				}}
+			/>
+			{#if nameError}
+				<p id="character-name-error" role="alert" class="text-sm text-amber-200">{nameError}</p>
+			{/if}
+			{#if gamestate.commandNotice}
+				<p role="status" class="text-sm text-amber-200">{gamestate.commandNotice}</p>
+			{/if}
+			<div class="flex flex-wrap gap-3">
+				<button type="submit" class="nes-btn is-primary" disabled={gamestate.busy}>Save name</button
+				>
+				<button
+					type="button"
+					class="nes-btn"
+					disabled={gamestate.busy}
+					onclick={() => {
+						nameOpen = false;
+					}}>Cancel</button
+				>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
 
 <style>
 	.floater {

@@ -32,6 +32,7 @@ import { evaluateDiceRoll } from '$util/dice';
 import { DataManager } from '$data/index';
 import { biomes } from '$data/biomes';
 import { browser } from '$app/environment';
+import { readSaveSlots, saveSlotKey, type SaveSlot } from '$lib/save-slots';
 import { parseCheckpoint, validateCheckpoint, SAVE_VERSION, type Checkpoint } from '$lib/saves';
 
 function makeContext(): ActionContext {
@@ -57,10 +58,12 @@ class GameStateImpl {
 		return this.interactions.mode;
 	}
 	get canUseInventory() {
-		return this.character.hp > 0 && this.interactions.canUseInventory;
+		return !this.saveDialog && this.character.hp > 0 && this.interactions.canUseInventory;
 	}
 	get canChangeEquipment() {
-		return this.canUseInventory || (this.character.hp > 0 && this.mode === 'shop');
+		return (
+			!this.saveDialog && (this.canUseInventory || (this.character.hp > 0 && this.mode === 'shop'))
+		);
 	}
 	requestDialog(request: DialogRequest) {
 		if (this.mode === 'death') throw new Error('Cannot open a dialog after defeat.');
@@ -78,7 +81,10 @@ class GameStateImpl {
 	showVictory(request: DialogRequest) {
 		if (this.character.hp === 0) throw new Error('A defeated character cannot enter victory.');
 		this.resetInteractions();
-		return this.interactions.dialog(request, 'victory');
+		return this.interactions.dialog(
+			{ ...request, choices: [...request.choices, ...this.endChoices()] },
+			'victory'
+		);
 	}
 	resetInteractions() {
 		abandonEncounter(this);
@@ -95,6 +101,11 @@ class GameStateImpl {
 	events = new EventEmitter<GameEvents>();
 	data: DataManager;
 	saveNotice: string | undefined = $state();
+	activeSlot: number | null = $state(null);
+	saveDialog:
+		| { kind: 'load' | 'save' | 'new'; slots: SaveSlot[]; startup?: boolean; fee: number }
+		| undefined = $state();
+	#slotSnapshots = new Map<number, string | null>();
 	busy = $state(false);
 	commandNotice: string | undefined = $state();
 	#command: AbortController | undefined;
@@ -119,6 +130,7 @@ class GameStateImpl {
 		data: DataManager,
 		definition: GameDef,
 		storedCheckpoint: string | null,
+		loadedSlot: number | null,
 		saveBlocked: boolean,
 		contentDiagnostics: ContentDiagnostic[],
 		rules: GameRules,
@@ -134,6 +146,15 @@ class GameStateImpl {
 		this.contentDiagnostics = contentDiagnostics;
 		this.#random = random;
 		this.rules = rules;
+		if (browser) {
+			try {
+				for (const slot of readSaveSlots(definition))
+					this.#slotSnapshots.set(slot.number, slot.raw);
+			} catch {
+				/* Storage errors are reported when loading or saving. */
+			}
+		}
+		if (loadedSlot !== null) this.#slotSnapshots.set(loadedSlot, storedCheckpoint);
 	}
 
 	roll(formula: string) {
@@ -171,11 +192,41 @@ class GameStateImpl {
 		};
 	}
 
-	/** Save a stable checkpoint; failure leaves the previous checkpoint intact. */
-	async save(): Promise<boolean> {
-		if (this.#saveBlocked) {
+	requestLoad(startup = false) {
+		this.openSaveDialog('load', 0, startup);
+	}
+	requestSave(fee = 0) {
+		if (this.mode !== 'exploration' || this.character.hp === 0) return;
+		if (this.character.coin < fee) {
+			this.message.set(`You need ${fee} coins to save here.`);
+			return;
+		}
+		this.openSaveDialog('save', fee);
+	}
+	requestNewGame() {
+		this.saveDialog = { kind: 'new', slots: [], fee: 0 };
+	}
+	private openSaveDialog(kind: 'load' | 'save', fee: number, startup = false) {
+		try {
+			if (!browser) throw new Error('Browser storage is unavailable.');
+			this.saveDialog = { kind, slots: readSaveSlots(this.#definition), fee, startup };
+			this.saveNotice = undefined;
+		} catch {
+			this.saveNotice = 'Saved games could not be read. Existing saves have been kept.';
+		}
+	}
+	private endChoices(): Choice[] {
+		return [
+			{ label: 'Load a saved game', actions: () => this.requestLoad() },
+			{ label: 'Start a new game', actions: () => this.requestNewGame() }
+		];
+	}
+
+	/** Compare the selected slot with the displayed snapshot before writing it. */
+	async save(slot = this.activeSlot ?? 1, expectedRaw?: string | null, fee = 0): Promise<boolean> {
+		if (this.#saveBlocked && expectedRaw === undefined) {
 			this.saveNotice ??=
-				'Saving is paused to protect the existing checkpoint. Reset this adventure to discard it.';
+				'This checkpoint is protected. Choose a slot at the inn to save your game.';
 			return false;
 		}
 		if (
@@ -187,41 +238,89 @@ class GameStateImpl {
 			this.saveNotice = 'Finish the encounter or item prompt before saving a living character.';
 			return false;
 		}
+		const coins = this.character.coin;
 		try {
 			if (!browser) throw new Error('Browser storage is unavailable.');
-			const storage = localStorage;
-			const key = `gameSave:${this.id}`;
-			if (storage.getItem(key) !== this.#storedCheckpoint) {
-				this.#saveBlocked = true;
+			if (!Number.isSafeInteger(fee) || fee < 0 || coins < fee)
+				throw new Error('Not enough coins to save.');
+			const key = saveSlotKey(this.id, slot);
+			const expected = expectedRaw === undefined ? this.#slotSnapshots.get(slot) : expectedRaw;
+			if (expected === undefined || localStorage.getItem(key) !== expected) {
 				this.saveNotice =
-					'The checkpoint changed in another session. Reload to load it, or reset to discard it.';
+					'This slot changed in another session. Open the save menu again to review it.';
 				return false;
 			}
+			this.character.coin -= fee;
 			const checkpoint = validateCheckpoint(this.toJSON(), this.#definition);
-			const raw = JSON.stringify(checkpoint);
-			storage.setItem(key, raw);
+			const raw = JSON.stringify({ ...checkpoint, savedAt: new Date().toISOString() });
+			localStorage.setItem(key, raw);
+			this.#slotSnapshots.set(slot, raw);
 			this.#storedCheckpoint = raw;
+			this.#saveBlocked = false;
+			this.activeSlot = slot;
 			this.saveNotice = undefined;
+			this.saveDialog = undefined;
+			this.message.set(
+				`Game saved in slot ${slot}. A warm glow passes over you as your vitals are scanned.`
+			);
 			return true;
 		} catch {
+			this.character.coin = coins;
 			this.saveNotice =
-				'The game could not save this checkpoint. Existing saved progress has been kept.';
+				'Your game could not be saved. Existing saves have been kept and you have not been charged.';
 			return false;
 		}
 	}
-	async reset() {
-		if (this.busy) return;
-		await this.#resetCheckpoint();
+
+	loadSlot(slot: number, expectedRaw?: string | null) {
+		return this.runCommand(async () => {
+			const raw = localStorage.getItem(saveSlotKey(this.id, slot));
+			if (raw === null) throw new Error('This save slot is empty.');
+			if (expectedRaw !== undefined && raw !== expectedRaw)
+				throw new Error('This slot changed. Open the load menu again to review it.');
+			const restored = await createGameState(this.#definition, {
+				slot,
+				initialize: false,
+				random: this.#random
+			});
+			if (restored.saveNotice) throw new Error(restored.saveNotice);
+			if (restored.#storedCheckpoint !== raw)
+				throw new Error('This slot changed while loading. Open the load menu again.');
+			this.replaceSession(restored);
+		});
 	}
-	async #resetCheckpoint() {
-		try {
-			if (!browser) throw new Error('Browser storage is unavailable.');
-			localStorage.removeItem(`gameSave:${this.id}`);
-			window.location.reload();
-		} catch {
-			this.saveNotice =
-				'The checkpoint could not be removed. Try again when browser storage is available.';
-		}
+	newGame() {
+		return this.runCommand(async () => {
+			const fresh = await createGameState(this.#definition, {
+				slot: null,
+				initialize: false,
+				random: this.#random
+			});
+			this.replaceSession(fresh);
+			if (this.location.current.enter) await this.resolveActions(this.location.current.enter);
+		});
+	}
+	private replaceSession(next: GameState) {
+		this.throwIfCommandCancelled();
+		this.resetInteractions();
+		this.character = next.character;
+		this.location = next.location;
+		this.npc = next.npc;
+		this.data = next.data;
+		this.#dead = false;
+		this.#saveBlocked = next.#saveBlocked;
+		this.#storedCheckpoint = next.#storedCheckpoint;
+		this.#slotSnapshots = next.#slotSnapshots;
+		this.activeSlot = next.activeSlot;
+		this.saveDialog = undefined;
+		this.saveNotice = next.saveNotice;
+		this.message.clear();
+		this.choices.set(this.location.current.choices ?? []);
+		this.#choiceContexts = new WeakMap();
+	}
+	/** Starting over preserves every saved game. */
+	async reset() {
+		return this.newGame();
 	}
 
 	async die(reason?: string) {
@@ -248,25 +347,8 @@ class GameStateImpl {
 				this.interactions.clear();
 				this.item.clear();
 				this.message.set(reason ?? this.rules.death.message ?? 'You have fallen.');
-				this.interactions.open(
-					'death',
-					[
-						{
-							label: 'Return to checkpoint',
-							actions: async () => {
-								if (browser) window.location.reload();
-							}
-						},
-						{
-							label: 'Start over',
-							actions: async () => {
-								await this.#resetCheckpoint();
-							}
-						}
-					],
-					item,
-					ctx
-				);
+				this.interactions.open('death', this.endChoices(), item, ctx);
+				this.requestLoad();
 			}
 		}
 	}
@@ -292,6 +374,7 @@ class GameStateImpl {
 	}
 
 	async choose(choice: Choice): Promise<CommandResult> {
+		if (this.saveDialog) return 'unavailable';
 		if (this.busy) return 'busy';
 		// Validate within the dispatcher too, so condition errors use the same reporting path.
 		let available = false;
@@ -422,7 +505,7 @@ export type GameState = GameStateImpl;
 /** Create an independent session without changing the adventure definition. */
 export async function createGameState(
 	game: GameDef | AdventureDefinition,
-	options: { random?: RandomSource } = {}
+	options: { random?: RandomSource; slot?: number | null; initialize?: boolean } = {}
 ): Promise<GameState> {
 	const definition = snapshotAdventure(game);
 	const contentDiagnostics = validateAdventure(definition);
@@ -437,13 +520,13 @@ export async function createGameState(
 	let saved: Checkpoint | undefined;
 	let storedCheckpoint: string | null = null;
 	let loadNotice: string | undefined;
-	if (browser) {
+	if (browser && options.slot !== null) {
 		try {
-			storedCheckpoint = localStorage.getItem(`gameSave:${definition.id}`);
+			storedCheckpoint = localStorage.getItem(saveSlotKey(definition.id, options.slot ?? 1));
 			if (storedCheckpoint !== null) saved = parseCheckpoint(storedCheckpoint, definition);
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : 'Browser storage is unavailable.';
-			loadNotice = `${reason} A new game is available; the existing checkpoint is protected until you reset this adventure.`;
+			loadNotice = `${reason} A new game is available; the existing checkpoint is protected; choose another slot or start a new game.`;
 		}
 	}
 	let char: Character;
@@ -452,7 +535,7 @@ export async function createGameState(
 	} catch (error) {
 		if (!saved) throw error;
 		const reason = error instanceof Error ? error.message : 'Checkpoint equipment is incompatible.';
-		loadNotice = `${reason} A new game is available; the existing checkpoint is protected until you reset this adventure.`;
+		loadNotice = `${reason} A new game is available; the existing checkpoint is protected; choose another slot or start a new game.`;
 		saved = undefined;
 		char = await createNewCharacter(definition.baseChar, data.items, rules);
 	}
@@ -479,17 +562,20 @@ export async function createGameState(
 		data,
 		definition,
 		storedCheckpoint,
+		options.slot === null ? null : (options.slot ?? 1),
 		!!loadNotice,
 		contentDiagnostics,
 		rules,
 		options.random
 	);
 	state.saveNotice = loadNotice;
+	state.activeSlot = saved ? (options.slot ?? 1) : null;
 
 	// Initializing a scene is not travel: do not replay its exit actions or replace
 	// the previous location. Wait for entry hooks before the UI receives the state.
 	state.choices.set(loc.current.choices ?? []);
-	if (!saved && loc.current.enter) await state.resolveActions(loc.current.enter);
+	if (options.initialize !== false && !saved && loc.current.enter)
+		await state.resolveActions(loc.current.enter);
 	return state;
 }
 
@@ -503,7 +589,15 @@ export async function getGameState(game: GameDef | AdventureDefinition): Promise
 	const existing = sessions.get(game.id);
 	if (existing) return existing;
 
-	const pending = createGameState(game);
+	const pending = createGameState(game, { slot: null }).then((state) => {
+		try {
+			if (readSaveSlots(state.definition as GameDef).some((slot) => slot.raw !== null))
+				state.requestLoad(true);
+		} catch {
+			state.saveNotice = 'Saved games could not be read. Existing saves have been kept.';
+		}
+		return state;
+	});
 	sessions.set(game.id, pending);
 	try {
 		return await pending;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SaveSlots from './SaveSlots.svelte';
 	import Character from '$lib/components/Character.svelte';
 	import SceneWindow from '$lib/components/SceneWindow.svelte';
 	import Location from '$lib/components/Location.svelte';
@@ -41,3 +42,9 @@
 		<Character {gamestate} />
 	</main>
 </div>
+
+{#if gamestate.saveDialog}
+	{#key gamestate.saveDialog}
+		<SaveSlots {gamestate} />
+	{/key}
+{/if}

@@ -337,12 +337,14 @@ describe('encounter outcomes and recovery', () => {
 		});
 		expect(state.character.hp).toBe(0);
 		expect(state.item.current?.id).toBe('engine/death');
-		expect(await state.choose(state.choices.current![0])).toBe('completed');
-		expect(reload).toHaveBeenCalledOnce();
+		expect(state.saveDialog?.kind).toBe('load');
+		expect(await state.loadSlot(1)).toBe('completed');
+		expect(state.character.hp).toBeGreaterThan(0);
+		expect(reload).not.toHaveBeenCalled();
 		expect(localStorage.getItem('gameSave:discovery')).toBe(saved);
 		localStorage.setItem('gameSave:other', 'other');
-		expect(await state.choose(state.choices.current![1])).toBe('completed');
-		expect(localStorage.getItem('gameSave:discovery')).toBeNull();
+		expect(await state.newGame()).toBe('completed');
+		expect(localStorage.getItem('gameSave:discovery')).toBe(saved);
 		expect(localStorage.getItem('gameSave:other')).toBe('other');
 	});
 	it('uses Yearlings death artwork and prevents duplicate death hooks', async () => {
