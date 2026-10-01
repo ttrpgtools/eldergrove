@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { checkCondition } from '$lib/conditions';
 	import type { Choice } from '$lib/types';
 	import type { GameState } from '$state/game.svelte';
 
@@ -12,12 +11,12 @@
 	} = $props();
 
 	const available = $derived(
-		gamestate.choices
-			.currentOrDefault([])
-			.filter((choice) => !choice.show || checkCondition(choice.show, gamestate))
+		gamestate.choices.currentOrDefault([]).filter((choice) => gamestate.isChoiceAvailable(choice))
 	);
 </script>
 
 {#each available as option (option)}
-	<button type="button" class="nes-btn" onclick={() => onact(option)}>{option.label}</button>
+	<button type="button" class="nes-btn" disabled={gamestate.busy} onclick={() => onact(option)}
+		>{option.label}</button
+	>
 {/each}

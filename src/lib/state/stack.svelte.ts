@@ -17,6 +17,12 @@ export class Stack<T> {
 		return this.#items.pop();
 	}
 
+	/** Remove an owned frame without disturbing newer interactions above it. */
+	remove(item: T) {
+		const index = this.#items.indexOf(item);
+		if (index !== -1) this.#items.splice(index, 1);
+	}
+
 	clear() {
 		this.#items = [];
 	}

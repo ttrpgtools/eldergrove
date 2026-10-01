@@ -3,7 +3,7 @@ import type { GameState } from '$state/game.svelte';
 import type { Action } from '.';
 
 export async function choicesPush(state: GameState, choices: Choice[]) {
-	state.choices.push(choices);
+	state.pushChoices(choices);
 }
 
 export async function choicesPop(state: GameState) {
@@ -11,8 +11,12 @@ export async function choicesPop(state: GameState) {
 }
 
 export async function yesno(state: GameState, opts: { yes: Action[]; no: Action[] }) {
-	state.choices.push([
-		{ label: 'Yes', actions: opts.yes.concat({ action: 'choicesPop' }) },
-		{ label: 'No', actions: opts.no.concat({ action: 'choicesPop' }) }
+	const answer = (actions: Action[]) => async (state: GameState) => {
+		state.choices.remove(frame);
+		await state.resolveActions(actions);
+	};
+	const frame = state.pushChoices([
+		{ label: 'Yes', actions: answer(opts.yes) },
+		{ label: 'No', actions: answer(opts.no) }
 	]);
 }

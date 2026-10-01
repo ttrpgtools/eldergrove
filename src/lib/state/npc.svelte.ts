@@ -5,6 +5,11 @@ class NpcManagerImpl {
 	current: NpcInstance | undefined = $state();
 	status: 'win' | 'run' | undefined = $state();
 	#npcs: DataManager['npcs'];
+	#revision = 0;
+
+	get revision() {
+		return this.#revision;
+	}
 
 	constructor(npcs: DataManager['npcs']) {
 		this.#npcs = npcs;
@@ -16,11 +21,13 @@ class NpcManagerImpl {
 		}
 		this.status = undefined;
 		this.current = npc;
+		this.#revision++;
 	}
 
 	clear() {
 		this.current = undefined;
 		this.status = undefined;
+		this.#revision++;
 	}
 }
 

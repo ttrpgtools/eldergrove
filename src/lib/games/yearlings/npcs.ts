@@ -197,7 +197,7 @@ export const npcInstances: NpcInstance[] = [
 		exit: async (s) => {
 			if (s.npc.status === 'win') {
 				s.character.flags.add('beat-morlin');
-				locationChange(s, 'yearlings/rocky-area');
+				await locationChange(s, 'yearlings/rocky-area');
 			}
 		},
 		desc: `A powerful wizard, gone a bit stir crazy alone in this cave for so long. Violently guards his collection of artifacts.`

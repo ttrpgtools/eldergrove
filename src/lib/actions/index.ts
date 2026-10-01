@@ -57,7 +57,7 @@ export const actions = {
 
 export type ActionName = keyof typeof actions;
 
-export type ActionFn = (state: GameState) => void | Promise<void>;
+export type ActionFn = (state: GameState, ctx: ActionContext) => void | Promise<void>;
 export interface Action {
 	action: ActionName | ((state: GameState, arg: unknown, ctx: ActionContext) => unknown);
 	arg?: unknown;

@@ -25,9 +25,7 @@
 	);
 
 	async function onact(choice: Choice) {
-		console.log(`Clicked menu button: ${choice.label}`);
-		gamestate.message.clear();
-		await gamestate.resolveActions(choice.actions);
+		await gamestate.choose(choice);
 	}
 
 	let floatNpc: { label: string; color: string } | undefined = $state();

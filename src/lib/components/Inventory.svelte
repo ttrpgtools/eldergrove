@@ -51,13 +51,15 @@
 						{/if}
 						<div class="flex flex-col gap-4">
 							{#if equippable}
-								<button type="button" class="nes-btn" onclick={() => character.autoEquip(shownItem)}
-									>Equip</button
+								<button
+									type="button"
+									class="nes-btn"
+									disabled={gamestate.busy}
+									onclick={() => gamestate.equip(shownItem)}>Equip</button
 								>
 							{/if}
 							{#if usable}
-								<Button
-									onclick={() => gamestate.resolveActions([{ action: 'itemUse', arg: shownItem }])}
+								<Button disabled={gamestate.busy} onclick={() => gamestate.useItem(shownItem)}
 									>Use</Button
 								>
 							{/if}

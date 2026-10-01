@@ -165,7 +165,7 @@ export class Character {
 		this.gear[where] = item;
 	}
 
-	autoEquip(item: Item | undefined) {
+	async autoEquip(item: Item | undefined) {
 		console.log(`Auto equipping ${item?.name}`);
 		if (!item || (item.type !== 'armor' && item.type !== 'weapon')) return;
 		const attempted: (keyof Gear)[] = (
@@ -179,14 +179,14 @@ export class Character {
 		// Set to first unoccupied slot
 		const unoccupied = attempted.find((eqs) => !this.gear[eqs]);
 		if (unoccupied) {
-			this.equipItem(item, unoccupied);
+			await this.equipItem(item, unoccupied);
 			this.removeFromInventory(item);
 			return unoccupied;
 		}
 		const preferred = attempted[0];
-		this.unequip(preferred);
+		await this.unequip(preferred);
 		this.removeFromInventory(item);
-		this.equipItem(item, preferred);
+		await this.equipItem(item, preferred);
 		return preferred;
 	}
 
@@ -194,7 +194,7 @@ export class Character {
 		const item = this.gear[where];
 		if (item) {
 			this.gear[where] = undefined;
-			this.addToInventory(item);
+			await this.addToInventory(item);
 		}
 	}
 

@@ -5,13 +5,15 @@ import { rollOnTable } from '$util/table';
 import type { Actions } from '$lib/actions';
 import { counterInc, counterReset } from '$lib/actions/counters';
 import { attackFromCharacter, attackFromNpc } from '$lib/actions/attacks';
-import { npcDead } from '$lib/conditions/npc';
 import { npcLoot } from '$lib/actions/npc';
 import { wait } from '$lib/actions/control';
 
+type Encounter = { revision: number; choices: Choice[]; finishing: boolean };
+const encounters = new WeakMap<GameState, Encounter>();
+
 function noEncounter(state: GameState) {
 	state.message.set(`There doesn't appear to be much going on here.`);
-	state.choices.push([
+	state.pushChoices([
 		{ label: `OK`, actions: [{ action: 'messageClear' }, { action: 'choicesPop' }] }
 	]);
 }
@@ -19,88 +21,97 @@ function noEncounter(state: GameState) {
 const attackAction =
 	(
 		npc: NpcInstance,
+		revision: number,
 		victoryFn: (gs: GameState) => void | Promise<void>,
 		deathMsg?: string | ((gs: GameState) => string | undefined)
 	) =>
 	async (s: GameState) => {
+		const current = () => s.npc.revision === revision && s.npc.current?.id === npc.id;
+		if (!current() || s.npc.status === 'win' || s.character.hp === 0) return;
 		const result = await attackFromCharacter(s);
-		if (result) {
-			s.message.set(`You did ${result} damage to ${npcLabel(npc, true, false)}.`);
-		}
-		if (npcDead(s)) {
+		s.throwIfCommandCancelled();
+		if (!current()) return;
+		if (result) s.message.set(`You did ${result} damage to ${npcLabel(npc, true, false)}.`);
+		if (s.npc.current!.hp === 0) {
+			// Mark before rewards/hooks so a stale attack cannot grant victory twice.
+			s.npc.status = 'win';
+			s.actionContext.encounterVictory = true;
 			await victoryFn(s);
-		} else {
-			s.choices.push([]);
-			await wait(s, 1500);
-			const att = await attackFromNpc(s, npc);
-			if (att === 0) {
-				s.message.set(`${npcLabel(npc, true)} missed you!`);
-			} else if (att == null) {
-				// Handled by weapon effect
-			} else {
-				s.message.set(`${npcLabel(npc, true)} hit you for ${att} damage.`);
-			}
-			if (s.character.hp === 0) {
-				const youDie = await s.data.items.get('yearlings/you-die');
-				s.item.push(youDie);
-				if (deathMsg) {
-					if (typeof deathMsg === 'function') {
-						deathMsg = deathMsg(s);
-					}
-					if (deathMsg) s.message.set(deathMsg);
-				}
-				s.choices.push([]);
-			}
-			s.choices.pop();
+			return;
+		}
+		await wait(s, 1500);
+		if (!current()) return;
+		const att = await attackFromNpc(s, npc);
+		s.throwIfCommandCancelled();
+		if (!current()) return;
+		if (att === 0) {
+			s.message.set(`${npcLabel(npc, true)} missed you!`);
+		} else if (att != null) {
+			s.message.set(`${npcLabel(npc, true)} hit you for ${att} damage.`);
+		}
+		if (s.character.hp === 0) {
+			s.actionContext.encounterVictory = false;
+			const youDie = await s.data.items.get('yearlings/you-die');
+			s.item.push(youDie);
+			const msg = typeof deathMsg === 'function' ? deathMsg(s) : deathMsg;
+			if (msg) s.message.set(msg);
+			s.pushChoices([]);
 		}
 	};
 
 async function setNpc(
 	npc: string | NpcInstance,
 	state: GameState,
-	choices: (x: NpcInstance) => Choice[]
+	choices: (x: NpcInstance, revision: number) => Choice[]
 ) {
-	if (state.npc.current && state.npc.current.exit) {
-		await state.resolveActions(state.npc.current.exit);
+	const previous = state.npc.current;
+	const oldEncounter = encounters.get(state);
+	if (previous?.exit && !oldEncounter?.finishing) {
+		await state.resolveActions(previous.exit);
 	}
-	if (typeof npc === 'string') {
-		npc = await state.data.npcs.get(npc);
-	}
-	state.npc.set(npc);
-	state.choices.push(choices(npc));
-	if (npc.enter) {
-		await state.resolveActions(npc.enter);
-	}
+	state.throwIfCommandCancelled();
+	if (typeof npc === 'string') npc = await state.data.npcs.get(npc);
+	state.throwIfCommandCancelled();
+	if (oldEncounter) state.choices.remove(oldEncounter.choices);
+	await state.npc.set(npc);
+	const revision = state.npc.revision;
+	const frame = state.pushChoices(choices(npc, revision));
+	encounters.set(state, { revision, choices: frame, finishing: false });
+	if (npc.enter) await state.resolveActions(npc.enter);
 }
 
 export async function encounterRandomNpc(
 	state: GameState,
 	{ table, followBy }: { table?: string[] | RandomTable<string>; followBy?: Actions }
 ) {
-	if (!table) {
-		return noEncounter(state);
-	}
+	if (!table) return noEncounter(state);
 	const results = rollOnTable(table);
 	if (results.length === 0) return noEncounter(state);
-	await setNpc(results[0], state, (npc) => [
+	await setNpc(results[0], state, (npc, revision) => [
 		{
 			label: 'Attack',
-			actions: attackAction(npc, async (s) => {
+			actions: attackAction(npc, revision, async (s) => {
 				s.message.append(` You killed ${npcLabel(npc, true, false)}.`);
 				await npcLoot(s);
-				s.choices.push([
+				const victoryChoices = s.pushChoices([
 					{
 						label: 'Leave',
 						actions: async (s) => {
-							s.choices.pop();
+							s.choices.remove(victoryChoices);
 							await encounterFinish(s, 'win', followBy);
 						}
 					}
 				]);
 			})
 		},
-		//{ label: 'Use Item'},
-		{ label: 'Run', actions: async (s) => await encounterFinish(s, 'run', followBy) }
+		{
+			label: 'Run',
+			actions: async (s) => {
+				if (s.npc.revision === revision && s.npc.status !== 'win') {
+					await encounterFinish(s, 'run', followBy);
+				}
+			}
+		}
 	]);
 }
 
@@ -110,31 +121,31 @@ export async function bossEncounter(
 	victoryFn: (x: GameState) => void | Promise<void>,
 	deathMsg?: string | ((gs: GameState) => string | undefined)
 ) {
-	await setNpc(boss, state, (npc) => [
-		{
-			label: 'Attack',
-			actions: attackAction(npc, victoryFn, deathMsg)
-		}
+	await setNpc(boss, state, (npc, revision) => [
+		{ label: 'Attack', actions: attackAction(npc, revision, victoryFn, deathMsg) }
 	]);
 }
 
 export async function encounterFinish(state: GameState, result: 'win' | 'run', next?: Actions) {
-	if (state.npc.current) {
-		// TODO: Is this generic or provided per location via actions?
-		const streakKey = `${state.location.current.id}:wins`;
-		if (result === 'win') {
-			await counterInc(state, streakKey);
-		} else {
-			await counterReset(state, streakKey);
-		}
-		state.npc.status = result;
-		state.choices.pop();
-		if (state.npc.current.exit) {
-			await state.resolveActions(state.npc.current.exit);
-		}
-		if (next) {
-			await state.resolveActions(next);
-		}
+	const npc = state.npc.current;
+	const revision = state.npc.revision;
+	const encounter = encounters.get(state);
+	if (!npc || encounter?.finishing) return;
+	if (encounter) encounter.finishing = true;
+	const ctx = state.actionContext;
+	ctx.encounterVictory = result === 'win';
+	const streakKey = `${state.location.current.id}:wins`;
+	if (result === 'win') await counterInc(state, streakKey);
+	else await counterReset(state, streakKey);
+	state.npc.status = result;
+	if (encounter) state.choices.remove(encounter.choices);
+	try {
+		// Exit hooks can inspect the finished NPC/status, or start a new encounter.
+		if (npc.exit) await state.resolveActions(npc.exit, ctx);
+	} finally {
+		// Remove only the encounter we own, before running a follow-up.
+		if (state.npc.revision === revision) state.npc.clear();
+		if (encounters.get(state) === encounter) encounters.delete(state);
 	}
-	state.npc.clear();
+	if (next) await state.resolveActions(next, ctx);
 }

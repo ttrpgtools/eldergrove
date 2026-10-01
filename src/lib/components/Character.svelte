@@ -6,7 +6,6 @@
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
-	import { hpHeal } from '$lib/actions/hp';
 	import { konamiCode } from '$util/konami';
 	let { gamestate }: { gamestate: GameState } = $props();
 	const character = $derived(gamestate.character);
@@ -58,19 +57,26 @@
 			{#if cheatmode}<button
 					type="button"
 					class="nes-btn"
-					onclick={() => hpHeal(gamestate, gamestate.character.maxHp - gamestate.character.hp)}
-					>Fill HP</button
+					disabled={gamestate.busy}
+					onclick={() =>
+						gamestate.runCommand([
+							{ action: 'hpHeal', arg: gamestate.character.maxHp - gamestate.character.hp }
+						])}>Fill HP</button
 				>{/if}
-			<button type="button" class="nes-btn is-error" onclick={() => gamestate.reset()}>Reset</button
+			<button
+				type="button"
+				class="nes-btn is-error"
+				disabled={gamestate.busy}
+				onclick={() => gamestate.reset()}>Reset</button
 			>
 		</div>
 		<div class="col-span-3">
 			<p class="nes-text is-primary my-2 text-xl">Equipped</p>
-			<GearSlot {character} where="right" icon="hand" flip />
-			<GearSlot {character} where="left" icon="hand" />
-			<GearSlot {character} where="head" icon="head" />
-			<GearSlot {character} where="torso" icon="torso" />
-			<GearSlot {character} where="feet" icon="boot" />
+			<GearSlot {gamestate} where="right" icon="hand" flip />
+			<GearSlot {gamestate} where="left" icon="hand" />
+			<GearSlot {gamestate} where="head" icon="head" />
+			<GearSlot {gamestate} where="torso" icon="torso" />
+			<GearSlot {gamestate} where="feet" icon="boot" />
 		</div>
 	</div>
 	{#if floatChar}

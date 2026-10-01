@@ -46,13 +46,13 @@ Original findings: `src/lib/state/game.svelte.ts`, `location.svelte.ts`, and `np
 ## 4. Action ordering and command lifecycle
 
 - [x] Await location exit/enter actions; verify their ordering with a regression test.
-- [ ] Await inventory additions; do not let subsequent actions outrun earlier work.
-- [ ] Add a session-level command dispatcher with consistent busy state, errors, and cancellation/lifecycle behavior.
-- [ ] Prevent overlapping combat, shop, item-use, and equipment commands; verify rapid/repeated input cannot duplicate rewards or consume one item multiple times.
-- [ ] Route UI mutations such as equip/unequip through supported commands.
-- [ ] Preserve action context through branches and supported continuations. `branch` currently omits context during condition evaluation.
-- [ ] Populate encounter results consistently; `ctx.encounterVictory` is declared but never assigned.
-- [ ] Ensure a follow-up encounter cannot be cleared by the previous encounter's cleanup.
+- [x] Await inventory additions; do not let subsequent actions outrun earlier work.
+- [x] Add a session-level command dispatcher with consistent busy state, errors, and cancellation/lifecycle behavior.
+- [x] Prevent overlapping combat, shop, item-use, and equipment commands; verify rapid/repeated input cannot duplicate rewards or consume one item multiple times.
+- [x] Route UI mutations such as equip/unequip through supported commands.
+- [x] Preserve action context through branches and supported continuations, including condition evaluation and confirmation menus.
+- [x] Populate encounter results consistently; publish victory before victory hooks and false for running/death.
+- [x] Ensure a follow-up encounter cannot be cleared by the previous encounter's cleanup.
 
 ## 5. Typed actions and content validation
 
@@ -137,3 +137,15 @@ Dependencies were absent during the original review. After the owner's `npm inst
 - Verification includes legacy and versioned round trips, malformed saves, unavailable/quota-limited storage, concurrent-session protection, transient interactions, and successful/failed saves at the real Yearlings inn. Browser playthrough and visual verification remain pending; no development server was started.
 - Passed all 35 engine tests, `npm run check` (zero errors/warnings), `npm run lint`, `npm run build`, Svelte autofixer analysis, and `git diff --check`. Changes remain uncommitted.
 - Next engine priority: section 4, action ordering and command lifecycle.
+
+### 2026-09-30 — action ordering and command lifecycle
+
+- Added per-session commands with synchronous locking, reactive `busy` state, visible failure/interruption notices, and result values (`completed`, `busy`, `unavailable`, `cancelled`, `failed`). Reject overlapping inputs instead of queuing old clicks; validate menu identity and visibility again when executing. Disable mutation controls while busy and expose `aria-busy` on the game UI. Reset is also blocked while a command is active.
+- UI entry points are `choose(choice)`, `useItem(item)`, `equip(item)`, and `unequip(slot)`; `runCommand(actions)` supports additional player commands. Trusted adventure hooks use and **await** `resolveActions(actions)` for nested work; they should not call `runCommand` recursively. Low-level managers remain available to trusted hooks and are not a sandbox or an automatic concurrency boundary.
+- Inventory additions, equipment transfers, and Morlin's exit travel are awaited. Equipment commands check ownership before equipping. Consumables are removed before their effects start so interrupted/failed effects cannot reuse the same item; there is no general transaction rollback.
+- Nested action functions now receive context as their second argument; individual action callbacks retain their existing third context argument. Branches, nested hooks/generators, shop menus, pickup prompts, and Yes/No confirmations retain context through `pushChoices`. Independent top-level commands start with a fresh context. Use `pushChoices` rather than raw stack pushes when authoring continuation menus that need context.
+- Confirmation and pickup cleanup removes its own frame before running continuation actions. Combat uses the command lock throughout the player attack, delay, NPC retaliation, and victory hooks instead of temporarily stacking a blank menu. Encounter revisions and owned menu frames prevent stale attacks/rewards and preserve new encounters started by exit hooks or follow-up actions. Finished NPC/status is available during exit hooks, then cleared before follow-ups if it is still the same encounter; cleanup also runs when exit hooks fail.
+- Leaving/replacing the game view calls `cancelCommand`. Built-in waits stop promptly and the interpreter stops subsequent steps. Trusted asynchronous hooks can use `commandSignal` and `throwIfCommandCancelled`; a hook that ignores cancellation must settle before the lock releases. Already completed mutations are retained, including consumed items and player damage dealt before an interrupted combat delay. This is cooperative cancellation, not rollback or forced termination of arbitrary JavaScript.
+- Added 23 command regression tests covering deferred inventory lookup, duplicate/stale input, independent locks, failures, cancellation, branch/continuation context, equipment ownership/transfers, shop payments, combat rewards/retaliation, owned prompt cleanup, follow-up/exit-created encounters, and real Morlin exit travel. Browser playthrough remains pending; no development server was started.
+- Verification: all 58 tests passed, `npm run check` reported zero errors/warnings, and `npm run lint`, `npm run build`, and `git diff --check` passed. Svelte autofixer found no issues; its generic effect suggestions were reviewed and retained for lifecycle cleanup and existing event-driven HP animations. Changes remain uncommitted.
+- Next engine priority: section 5, typed actions and content validation. Broader interaction modes, generic death handling, item combat rules, stock enforcement, and equipment compatibility remain in their respective later sections.

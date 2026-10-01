@@ -54,7 +54,7 @@ export async function shopStart(state: GameState, msg?: string) {
 		]
 	}));
 	shopChoices.push({ label: 'No Thanks', actions: [{ action: 'choicesPop' }] });
-	state.choices.push(shopChoices);
+	state.pushChoices(shopChoices);
 	if (msg) {
 		state.message.set(msg);
 	}

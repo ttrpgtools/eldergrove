@@ -3,8 +3,10 @@ import {
 	type Choice,
 	type GameDef,
 	type ActionContext,
-	type GameEvents
+	type GameEvents,
+	type Gear
 } from '$lib/types';
+import { checkCondition } from '$lib/conditions';
 import { actions as availableActions, isActionValid, type Actions } from '$lib/actions';
 import { createNewCharacter, type Character } from './character.svelte';
 import { createLocationManager, type LocationManager } from './location.svelte';
@@ -25,6 +27,8 @@ function makeContext(): ActionContext {
 	};
 }
 
+export type CommandResult = 'completed' | 'busy' | 'unavailable' | 'cancelled' | 'failed';
+
 class GameStateImpl {
 	character: Character = $state()!;
 	location: LocationManager = $state()!;
@@ -35,6 +39,11 @@ class GameStateImpl {
 	events = new EventEmitter<GameEvents>();
 	data: DataManager;
 	saveNotice: string | undefined = $state();
+	busy = $state(false);
+	commandNotice: string | undefined = $state();
+	#command: AbortController | undefined;
+	#context: ActionContext | undefined;
+	#choiceContexts = new WeakMap<Choice[], ActionContext>();
 	#saveBlocked: boolean;
 	#storedCheckpoint: string | null;
 	#definition: GameDef;
@@ -127,6 +136,7 @@ class GameStateImpl {
 		}
 	}
 	async reset() {
+		if (this.busy) return;
 		try {
 			if (!browser) throw new Error('Browser storage is unavailable.');
 			localStorage.removeItem(`gameSave:${this.id}`);
@@ -137,29 +147,143 @@ class GameStateImpl {
 		}
 	}
 
-	async resolveActions(actions: Actions, ctx?: ActionContext) {
-		if (typeof actions === 'function') {
-			return await actions(this);
+	get actionContext(): ActionContext {
+		return this.#context ?? makeContext();
+	}
+
+	/** Continuation menus retain the context that produced them. */
+	pushChoices(choices: Choice[], ctx = this.actionContext): Choice[] {
+		this.choices.push(choices);
+		const frame = this.choices.current!;
+		this.#choiceContexts.set(frame, ctx);
+		return frame;
+	}
+
+	isChoiceAvailable(choice: Choice): boolean {
+		const frame = this.choices.current;
+		return (
+			!!frame?.includes(choice) &&
+			(!choice.show || !!checkCondition(choice.show, this, this.#choiceContexts.get(frame)))
+		);
+	}
+
+	async choose(choice: Choice): Promise<CommandResult> {
+		if (this.busy) return 'busy';
+		// Validate within the dispatcher too, so condition errors use the same reporting path.
+		let available = false;
+		const result = await this.runCommand(
+			async () => {
+				available = this.isChoiceAvailable(choice);
+				if (!available) return;
+				this.message.clear();
+				await this.resolveActions(choice.actions);
+			},
+			this.#choiceContexts.get(this.choices.current ?? []) ?? makeContext()
+		);
+		return result === 'completed' && !available ? 'unavailable' : result;
+	}
+
+	useItem(item: Item | undefined) {
+		return this.runCommand([{ action: 'itemUse', arg: item }]);
+	}
+
+	equip(item: Item | undefined) {
+		return this.runCommand(async () => {
+			if (item && this.character.hp > 0 && this.character.getInventoryCount(item) > 0) {
+				await this.character.autoEquip(item);
+			}
+		});
+	}
+
+	unequip(slot: keyof Gear) {
+		return this.runCommand(async () => {
+			if (this.character.hp > 0) await this.character.unequip(slot);
+		});
+	}
+
+	/** Player input is single-flight. Never queue a stale click behind another command. */
+	async runCommand(actions: Actions, ctx = makeContext()): Promise<CommandResult> {
+		if (this.busy) return 'busy';
+		this.busy = true;
+		this.commandNotice = undefined;
+		const controller = new AbortController();
+		this.#command = controller;
+		try {
+			await this.resolveActions(actions, ctx);
+			return 'completed';
+		} catch (error) {
+			if (controller.signal.aborted) {
+				this.commandNotice = 'The action was interrupted. Changes already made have been kept.';
+				return 'cancelled';
+			}
+			const reason = error instanceof Error ? error.message : String(error);
+			this.commandNotice = `The action could not finish: ${reason} Changes already made have been kept.`;
+			return 'failed';
+		} finally {
+			this.#command = undefined;
+			this.busy = false;
 		}
-		console.log(`resolving Actions array`, actions);
-		ctx = ctx ?? makeContext();
-		for await (const step of actions) {
-			if (typeof step.action !== 'function' && !(step.action in availableActions))
-				throw `Unknown action ${step.action}`;
-			if (isActionValid(step, this, ctx)) {
-				console.log(`starting processing of action step`, step);
+	}
+
+	cancelCommand() {
+		this.#command?.abort();
+	}
+
+	/** Trusted hooks may use this signal for their own cancellable asynchronous work. */
+	get commandSignal() {
+		return this.#command?.signal;
+	}
+
+	throwIfCommandCancelled() {
+		this.#command?.signal.throwIfAborted();
+	}
+
+	/** Built-in delays stop promptly when the game view is replaced or unmounted. */
+	async wait(ms: number) {
+		this.throwIfCommandCancelled();
+		const signal = this.#command?.signal;
+		await new Promise<void>((resolve, reject) => {
+			const timer = setTimeout(() => {
+				signal?.removeEventListener('abort', abort);
+				resolve();
+			}, ms);
+			function abort() {
+				clearTimeout(timer);
+				reject(signal?.reason);
+			}
+			signal?.addEventListener('abort', abort, { once: true });
+		});
+	}
+
+	/** Internal interpreter: hooks must await it; player input uses runCommand/choose. */
+	async resolveActions(actions: Actions, ctx = this.actionContext): Promise<void> {
+		const previousContext = this.#context;
+		this.#context = ctx;
+		try {
+			this.throwIfCommandCancelled();
+			if (typeof actions === 'function') {
+				await actions(this, ctx);
+				this.throwIfCommandCancelled();
+				return;
+			}
+			for (const step of actions) {
+				this.throwIfCommandCancelled();
+				if (typeof step.action !== 'function' && !(step.action in availableActions))
+					throw new Error(`Unknown action ${step.action}`);
+				if (!isActionValid(step, this, ctx)) continue;
 				const res =
 					typeof step.action === 'function'
 						? await step.action(this, step.arg, ctx)
 						: await availableActions[step.action](this, step.arg as never, ctx);
-				console.log(`results are in`, res, res?.toString());
+				this.throwIfCommandCancelled();
 				if (res && isAsyncGenerator<Actions>(res)) {
-					console.log(`looping over the inner generator`);
 					for await (const inner of res) {
 						await this.resolveActions(inner, ctx);
 					}
 				}
 			}
+		} finally {
+			this.#context = previousContext;
 		}
 	}
 }
