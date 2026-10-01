@@ -1,3 +1,4 @@
+import { encounterTurn } from '$lib/games/encounter';
 import type { Item } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import type { Action } from '.';
@@ -21,16 +22,15 @@ export async function inventoryRemove(state: GameState, item: Item | string) {
 export async function itemUse(state: GameState, item: Item | undefined) {
 	if (
 		!item ||
-		state.character.hp === 0 ||
+		!state.canUseInventory ||
+		(state.mode === 'combat' && item.combatUse === 'forbidden') ||
 		state.character.getInventoryCount(item) === 0 ||
 		!item.effects
 	)
 		return;
 	// Reserve the consumable before effects. Interrupted/failed effects cannot reuse it.
 	if (item.type === 'consumable') state.character.removeFromInventory(item);
-	return (async function* () {
-		if (item.effects) yield item.effects;
-	})();
+	await encounterTurn(state, item.effects, item.combatUse !== 'free');
 }
 
 export async function itemFind(
@@ -40,21 +40,21 @@ export async function itemFind(
 	if (typeof item === 'string') {
 		item = await state.data.items.get(item);
 	}
-	state.item.push(item);
-	const prompt = state.item.current!;
-	const dismiss = () => {
-		state.choices.remove(frame);
-		state.item.remove(prompt);
-	};
-	const frame = state.pushChoices([
+	state.interactions.dialog(
 		{
-			label: 'Take it!',
-			actions: async (state) => {
-				dismiss();
-				await inventoryAdd(state, item);
-				await state.resolveActions(takeActions);
-			}
+			presentation: { title: item.name, description: item.desc, image: item.image },
+			choices: [
+				{
+					label: 'Take it!',
+					actions: async (state) => {
+						await inventoryAdd(state, item);
+						await state.resolveActions(takeActions);
+					}
+				},
+				{ label: 'No Thanks...', actions: [] }
+			]
 		},
-		{ label: 'No Thanks...', actions: dismiss }
-	]);
+		'conversation',
+		item
+	);
 }

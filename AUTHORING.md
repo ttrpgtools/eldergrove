@@ -129,4 +129,50 @@ action('npcDamage', { amount: 20, type: 'fire', source: 'effect' });
 action('hpDamage', { amount: { from: 'rollResult' }, type: 'poison' });
 ```
 
-The default source is `effect`; natural attacks use `attack`. Untyped NPC damage reaches an NPC's existing `defend` hook with type `untyped`. Damage hooks should compute a result without changing health themselves. Item turn consumption and immediate encounter victory/death resolution remain the next interaction-lifecycle workstream.
+The default source is `effect`; natural attacks use `attack`. Untyped NPC damage reaches an NPC's existing `defend` hook with type `untyped`. Damage hooks should compute a result without changing health themselves. Inventory effects also participate in encounter turns and terminal outcome resolution, as described below.
+
+## Engine-owned interactions
+
+Use requests or declarative actions instead of changing scene/menu stacks. The session exposes `mode`, `scene`, `availableChoices`, and `canUseInventory` for presentation code. Modes are `exploration`, `combat`, `shop`, `conversation`, `death`, and `victory`. The renderer uses these views and the existing command methods; adventure modules do not import Svelte components.
+
+```ts
+action('dialogStart', {
+	presentation: {
+		title: 'The gatekeeper',
+		description: 'A traveler waits beside the gate.',
+		image: '/img/gatekeeper.webp'
+	},
+	message: 'Where will you go?',
+	choices: [choice('Continue', [action('locationChange', 'my-game/road')])]
+});
+
+action('encounterStart', {
+	npc: 'my-game/boss',
+	flee: false,
+	onVictory: [action('locationChange', 'my-game/ending')],
+	onFinish: [action('messageSet', 'You return to exploring.')]
+});
+
+action('victoryShow', {
+	presentation: { title: 'You win', description: 'Peace returns to the valley.' },
+	choices: []
+});
+```
+
+`dialogStart`, `victoryShow`, and `encounterStart` validate request shapes and nested declarative actions. Content validation checks NPC references, scene image paths, and continuation references. Trusted hooks can use `state.requestDialog(request)`, `state.requestChoices(choices)`, `await state.requestEncounter(request)`, `await state.requestTrade(message?)`, and `state.showVictory(request)`. Existing `shopStart`, `yesno`, `itemFind`, and `encounterRandomNpc` actions use the same owned lifecycle. `bossEncounter` remains a compatibility helper.
+
+Dialog/choices requests return a handle with `active` and `close()`. A dialog response closes its own scene/menu before executing its actions, so a newly opened interaction survives the old response's cleanup. Nested dialogs restore the previous mode when closed. Travel invalidates all old handles and menus, clears transient scenes, and abandons the old encounter; death replaces them with recovery. Ending scenes persist until an explicit transition or reset. Use `presentation.title`, `description`, and `image`, plus choices/messages, to customize scenes; text is rendered as text rather than arbitrary HTML.
+
+An encounter owns the Attack/Run menu, retaliation, victory menu, and cleanup. Default victory grants NPC loot/XP and offers Leave. A supplied `onVictory` replaces those default rewards; authors wanting them should explicitly call `npcLoot`. Victory is marked before rewards/hooks so failed or repeated input cannot grant the same encounter's rewards twice. `onFinish` runs after exit/cleanup when Leave/Run finishes an encounter. The existing rule-level `encounters.onFinish` runs first. `flee: false` removes Run. `deathMessage` can be text or a trusted synchronous function; recovery is engine-owned.
+
+## Item effects and combat turns
+
+Inventory effects are available during exploration and combat. Shop confirmations, dialogs, victory, and death block item/equipment mutations; the UI still lets players inspect their inventory. Equipped-item changes remain free during combat. Owned consumables are reserved before their effects, with no rollback after failure or cancellation.
+
+Items can specify `combatUse: 'turn' | 'free' | 'forbidden'`. The default is `turn`: after effects finish, a living enemy retaliates once using the adventure's combat rules. Healing therefore takes a turn too. `free` skips retaliation but still checks victory/death. `forbidden` rejects combat use without consuming the item. Outside combat, these policies do not restrict use.
+
+Damage from effects passes through the defence hooks. A killing item resolves victory immediately and skips retaliation; lethal character effects trigger recovery both inside and outside combat. Enemy effects are also checked for terminal outcomes. If an item opens a continuation prompt, the pending turn waits until the prompts are answered and combat becomes active again; roll context remains attached. Travel, replacement encounters, or death discard that old pending turn. Interrupted retaliation retains the consumed item and completed player effects without queuing another retaliation. Effects that throw still resolve terminal health outcomes; they do not trigger retaliation.
+
+Transient interactions are not checkpoints. Saving is allowed only in living exploration without an active NPC/item scene. Shop stock/buyback enforcement, keyed duplicate equipment, and other remaining polish are separate roadmap items.
+
+`state.interactions`, `choices`, `item`, and raw manager mutations remain available for legacy trusted hooks. They are implementation escape hatches, not the supported authoring surface: raw stack changes bypass mode ownership, lifecycle cleanup, and pending-turn handling. New content should use requests/declarative actions and await nested actions. These APIs preserve the existing trusted-code model; they do not sandbox executable adventures.

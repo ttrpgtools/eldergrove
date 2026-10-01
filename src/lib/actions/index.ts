@@ -1,5 +1,5 @@
 import { checkCondition, type Condition } from '$lib/conditions';
-import { messageAppend, messageClear, messageSet } from './conversation';
+import { messageAppend, messageClear, messageSet, dialogStart, victoryShow } from './conversation';
 import { flagSet, flagUnset } from './flags';
 import { locationChange, locationDesc, locationReturn } from './location';
 import type { GameState } from '$state/game.svelte';
@@ -14,7 +14,7 @@ import { diceMinZero, diceRoll } from './dice';
 import { npcDamage, npcHeal, npcLoot } from './npc';
 import { branch, wait } from './control';
 import type { ArgumentField } from '$lib/arguments';
-import { encounterRandomNpc } from '$lib/games/encounter';
+import { encounterRandomNpc, encounterStart } from '$lib/games/encounter';
 
 export function isActionValid(action: Action, gamestate: GameState, ctx: ActionContext) {
 	if (action.valid == null) return true;
@@ -55,7 +55,10 @@ export const actions = {
 	npcLoot,
 	shopStart,
 	shopFinish,
-	encounterRandomNpc
+	encounterRandomNpc,
+	encounterStart,
+	dialogStart,
+	victoryShow
 } as const;
 
 export type ActionName = keyof typeof actions;

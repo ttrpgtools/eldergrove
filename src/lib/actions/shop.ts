@@ -1,69 +1,59 @@
 import type { Choice } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
-
-function noEncounter(state: GameState) {
-	state.message.set(`This place doesn't seem to have any wares available at the moment.`);
-	state.choices.set([{ label: `OK`, actions: [{ action: 'messageClear' }] }]);
-}
-
 export async function shopStart(state: GameState, msg?: string) {
-	if (!state.location.current.shop) return noEncounter(state);
-	const fullshop = await Promise.all(
+	if (state.mode !== 'exploration' || state.character.hp === 0) return;
+	if (!state.location.current.shop?.length) {
+		state.requestDialog({
+			message: `This place doesn't seem to have any wares available at the moment.`,
+			choices: [{ label: 'OK', actions: [{ action: 'messageClear' }] }]
+		});
+		return;
+	}
+	const listings = await Promise.all(
 		state.location.current.shop.map(async (listing) => ({
 			item: await state.data.items.get(
 				typeof listing.item === 'string' ? listing.item : listing.item.id
 			),
-			cost: listing.cost,
-			stock: listing.stock,
-			willBuy: listing.willBuy
+			cost: listing.cost
 		}))
 	);
-	const shopChoices: Choice[] = fullshop.map((inv) => ({
-		label: `${inv.item.name} (${inv.cost})`,
-		actions: [
-			{ action: 'itemPush', arg: inv.item },
-			{ action: 'messageSet', arg: `It costs ${inv.cost} coin, interested?` },
-			{
-				action: 'yesno',
-				arg: {
-					yes: [
+	const choices: Choice[] = listings.map((listing) => ({
+		label: `${listing.item.name} (${listing.cost})`,
+		actions: async (state) => {
+			if (!shop.active) return;
+			state.interactions.dialog(
+				{
+					message: `It costs ${listing.cost} coin, interested?`,
+					choices: [
 						{
-							action: 'messageSet',
-							arg: `Looks like you don't have enough coin at the moment...`,
-							valid: { condition: 'coinsLessThan', arg: inv.cost }
+							label: 'Yes',
+							actions: async (state) => {
+								if (state.character.coin < listing.cost) {
+									state.message.set(`Looks like you don't have enough coin at the moment...`);
+									return;
+								}
+								await state.character.addToInventory(listing.item);
+								state.character.coin -= listing.cost;
+								state.message.set('A pleasure doing business with you.');
+							}
 						},
 						{
-							action: 'messageSet',
-							arg: `A pleasure doing business with you.`,
-							valid: { condition: 'coinsAtLeast', arg: inv.cost }
-						},
-						{
-							action: 'inventoryAdd',
-							arg: inv.item,
-							valid: { condition: 'coinsAtLeast', arg: inv.cost }
-						},
-						{
-							action: 'coinsRemove',
-							arg: inv.cost,
-							valid: { condition: 'coinsAtLeast', arg: inv.cost }
-						},
-						{ action: 'itemPop' }
-					],
-					no: [
-						{ action: 'messageSet', arg: `Hopefully it'll be here if you reconsider.` },
-						{ action: 'itemPop' }
+							label: 'No',
+							actions: async (state) => {
+								state.message.set(`Hopefully it'll be here if you reconsider.`);
+							}
+						}
 					]
-				}
-			}
-		]
+				},
+				'conversation',
+				listing.item
+			);
+		}
 	}));
-	shopChoices.push({ label: 'No Thanks', actions: [{ action: 'choicesPop' }] });
-	state.pushChoices(shopChoices);
-	if (msg) {
-		state.message.set(msg);
-	}
+	choices.push({ label: 'No Thanks', actions: () => shop.close() });
+	const shop = state.interactions.open('shop', choices);
+	if (msg) state.message.set(msg);
 }
-
 export async function shopFinish(state: GameState) {
-	state.choices.pop();
+	if (state.mode === 'shop') state.interactions.closeCurrent();
 }

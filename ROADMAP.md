@@ -79,11 +79,13 @@ Verified with immutable-source/session isolation, world checkpoint round trips, 
 
 ## 7. Interaction and UI/content boundary
 
-- [ ] Let content request an encounter, trade, dialog, or choices without manipulating internal choice/item stacks directly.
-- [ ] Model explicit interaction modes: exploration, combat, shop, conversation, death, and victory, with engine-owned transitions.
-- [ ] Keep overlays/stacks as implementation details where useful; centralize their lifecycle and cleanup.
-- [ ] Make inventory effects participate in combat defence, victory/death resolution, and turn rules. Damage now uses the defence policy (section 6); item effects still do not resolve victory immediately or consistently consume a combat turn.
-- [ ] Define supported customization of presentation without making adventure modules depend on Svelte components or full mutable engine internals.
+- [x] Let content request an encounter, trade, dialog, or choices without manipulating internal choice/item stacks directly. Typed session requests and declarative `encounterStart`, `dialogStart`, and `victoryShow` support new content; existing shop, confirmation, pickup, and random encounter actions use the same lifecycle.
+- [x] Model explicit interaction modes: exploration, combat, shop, conversation, death, and victory, with engine-owned transitions. Yearlings' ending enters victory mode; the UI reads scene/menu views and prevents inventory mutations during prompts and terminal scenes.
+- [x] Keep overlays/stacks as implementation details where useful; centralize their lifecycle and cleanup. Owned handles close only their own scene/menu, preserve new interactions opened by responses, invalidate on travel, and clear for death. Legacy raw APIs remain compatibility escape hatches and are documented as unsupported for new content.
+- [x] Make inventory effects participate in combat defence, victory/death resolution, and turn rules. Default item use consumes one combat turn; `free` and `forbidden` policies are supported. Continuation prompts defer retaliation while preserving context; stale encounters cannot retaliate or reward after replacement. Item kills grant the encounter's rewards once, and lethal effects trigger recovery.
+- [x] Define supported customization of presentation without making adventure modules depend on Svelte components or full mutable engine internals. Scene title/description/image and choices/messages are supported data; declarative continuations validate references before play.
+
+Verification: 185 tests pass, including 23 new interaction tests covering nested ownership, travel, shops, victory, real Yearlings ending/bomb defence, item turns, continuation context, terminal outcomes, failure, and cancellation. Type checks, lint, Svelte analysis, and production build pass. Browser playthrough remains pending; no development server was started. Stock/buyback semantics and broader polish remain section 8.
 
 ## 8. Remaining correctness and polish
 

@@ -19,7 +19,7 @@
 		<button
 			type="button"
 			class="nes-pointer ml-auto block h-full px-2"
-			disabled={gamestate.busy}
+			disabled={gamestate.busy || !gamestate.canUseInventory}
 			onclick={() => gamestate.unequip(where)}
 		>
 			<i class="nes-icon close is-small before:text-white"></i>

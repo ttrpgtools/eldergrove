@@ -14,9 +14,7 @@
 		gamestate: GameState;
 	} = $props();
 
-	const entity = $derived(
-		gamestate.item.current ?? gamestate.npc.current ?? gamestate.location.current
-	);
+	const entity = $derived(gamestate.scene);
 
 	const crossOut = $derived(entity && hasHp(entity) && entity.hp === 0);
 

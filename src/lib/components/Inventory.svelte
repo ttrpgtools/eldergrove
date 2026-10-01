@@ -54,13 +54,17 @@
 								<button
 									type="button"
 									class="nes-btn"
-									disabled={gamestate.busy}
+									disabled={gamestate.busy || !gamestate.canUseInventory}
 									onclick={() => gamestate.equip(shownItem)}>Equip</button
 								>
 							{/if}
 							{#if usable}
-								<Button disabled={gamestate.busy} onclick={() => gamestate.useItem(shownItem)}
-									>Use</Button
+								<Button
+									disabled={gamestate.busy || !gamestate.canUseInventory}
+									onclick={async () => {
+										const result = await gamestate.useItem(shownItem);
+										if (result !== 'busy') open = false;
+									}}>Use</Button
 								>
 							{/if}
 						</div>

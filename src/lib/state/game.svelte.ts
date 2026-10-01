@@ -1,3 +1,11 @@
+import { Interactions, type DialogRequest } from './interactions.svelte';
+import {
+	encounterStart,
+	settleEncounter,
+	abandonEncounter,
+	type EncounterRequest
+} from '$lib/games/encounter';
+import { shopStart } from '$lib/actions/shop';
 import { snapshotAdventure, type AdventureDefinition } from '$lib/definitions';
 import { resolveRules, ruleAmount, type GameRules } from '$lib/rules';
 import {
@@ -38,8 +46,48 @@ class GameStateImpl {
 	character: Character = $state()!;
 	location: LocationManager = $state()!;
 	message = new Messanger();
+	readonly interactions = new Interactions(this);
+	get scene() {
+		return this.item.current ?? this.npc.current ?? this.location.current;
+	}
+	get availableChoices() {
+		return (this.choices.current ?? []).filter((choice) => this.isChoiceAvailable(choice));
+	}
+	get mode() {
+		return this.interactions.mode;
+	}
+	get canUseInventory() {
+		return this.character.hp > 0 && this.interactions.canUseInventory;
+	}
+	requestDialog(request: DialogRequest) {
+		if (this.mode === 'death') throw new Error('Cannot open a dialog after defeat.');
+		return this.interactions.dialog(request);
+	}
+	requestChoices(choices: Choice[]) {
+		return this.requestDialog({ choices });
+	}
+	requestEncounter(request: EncounterRequest) {
+		return encounterStart(this, request);
+	}
+	requestTrade(message?: string) {
+		return shopStart(this, message);
+	}
+	showVictory(request: DialogRequest) {
+		if (this.character.hp === 0) throw new Error('A defeated character cannot enter victory.');
+		this.resetInteractions();
+		return this.interactions.dialog(request, 'victory');
+	}
+	resetInteractions() {
+		abandonEncounter(this);
+		this.interactions.clear();
+		this.item.clear();
+		this.choices.set(this.location.current.choices ?? []);
+	}
+
+	/** @deprecated Internal compatibility stack; content uses requestChoices/requestDialog. */
 	choices = new Stack<Choice[]>();
 	npc: NpcManager = $state()!;
+	/** @deprecated Internal compatibility stack; presentation uses scene. */
 	item = new Stack<Item>();
 	events = new EventEmitter<GameEvents>();
 	data: DataManager;
@@ -127,7 +175,12 @@ class GameStateImpl {
 				'Saving is paused to protect the existing checkpoint. Reset this adventure to discard it.';
 			return false;
 		}
-		if (this.npc.current || this.item.current || this.character.hp === 0) {
+		if (
+			this.mode !== 'exploration' ||
+			this.npc.current ||
+			this.item.current ||
+			this.character.hp === 0
+		) {
 			this.saveNotice = 'Finish the encounter or item prompt before saving a living character.';
 			return false;
 		}
@@ -188,9 +241,12 @@ class GameStateImpl {
 							type: 'trinket',
 							desc: 'Your adventure has ended. You can return to your checkpoint or start again.'
 						};
-				this.item.push(item);
+				abandonEncounter(this);
+				this.interactions.clear();
+				this.item.clear();
 				this.message.set(reason ?? this.rules.death.message ?? 'You have fallen.');
-				this.pushChoices(
+				this.interactions.open(
+					'death',
 					[
 						{
 							label: 'Return to checkpoint',
@@ -205,6 +261,7 @@ class GameStateImpl {
 							}
 						}
 					],
+					item,
 					ctx
 				);
 			}
@@ -253,7 +310,7 @@ class GameStateImpl {
 
 	equip(item: Item | undefined) {
 		return this.runCommand(async () => {
-			if (item && this.character.hp > 0 && this.character.getInventoryCount(item) > 0) {
+			if (item && this.canUseInventory && this.character.getInventoryCount(item) > 0) {
 				await this.character.autoEquip(item);
 			}
 		});
@@ -261,7 +318,7 @@ class GameStateImpl {
 
 	unequip(slot: keyof Gear) {
 		return this.runCommand(async () => {
-			if (this.character.hp > 0) await this.character.unequip(slot);
+			if (this.canUseInventory) await this.character.unequip(slot);
 		});
 	}
 
@@ -274,6 +331,10 @@ class GameStateImpl {
 		this.#command = controller;
 		try {
 			await this.resolveActions(actions, ctx);
+			await this.resolveActions(async () => {
+				await settleEncounter(this);
+				if (this.character.hp === 0 && this.mode !== 'death') await this.die();
+			}, ctx);
 			return 'completed';
 		} catch (error) {
 			if (controller.signal.aborted) {

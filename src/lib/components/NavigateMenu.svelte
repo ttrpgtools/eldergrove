@@ -10,9 +10,7 @@
 		gamestate: GameState;
 	} = $props();
 
-	const available = $derived(
-		gamestate.choices.currentOrDefault([]).filter((choice) => gamestate.isChoiceAvailable(choice))
-	);
+	const available = $derived(gamestate.availableChoices);
 </script>
 
 {#each available as option (option)}

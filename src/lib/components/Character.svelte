@@ -57,7 +57,7 @@
 			{#if cheatmode}<button
 					type="button"
 					class="nes-btn"
-					disabled={gamestate.busy}
+					disabled={gamestate.busy || !gamestate.canUseInventory}
 					onclick={() =>
 						gamestate.runCommand([
 							{ action: 'hpHeal', arg: gamestate.character.maxHp - gamestate.character.hp }

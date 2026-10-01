@@ -421,6 +421,9 @@ export const locations: Location[] = [
 	{
 		id: 'yearlings/victory',
 		name: 'You Win',
+		enter: (s) => {
+			s.showVictory({ choices: s.location.current.choices ?? [] });
+		},
 		biome: 'forest',
 		image: '/img/location/yearlings-victory.webp',
 		choices: [

@@ -78,7 +78,39 @@ const numeric = (value: unknown, path: string) => {
 	number(value, path);
 };
 
+function dialog(value: unknown, path: string) {
+	const request = object(value, path);
+	array(request.choices, `${path}.choices`);
+	if (request.message !== undefined) message(request.message, `${path}.message`);
+	if (request.presentation !== undefined) {
+		const scene = object(request.presentation, `${path}.presentation`);
+		string(scene.title, `${path}.presentation.title`);
+		if (scene.description !== undefined)
+			message(scene.description, `${path}.presentation.description`);
+		if (scene.image !== undefined) string(scene.image, `${path}.presentation.image`);
+	}
+}
 const actionArguments: Record<ActionName, (value: unknown, path: string) => void> = {
+	dialogStart: dialog,
+	victoryShow: dialog,
+	encounterStart: (value, path) => {
+		const request = object(value, path);
+		if (typeof request.npc === 'string') string(request.npc, `${path}.npc`);
+		else {
+			const npc = object(request.npc, `${path}.npc`);
+			string(npc.id, `${path}.npc.id`);
+			string(npc.name, `${path}.npc.name`);
+			integer(npc.maxHp, `${path}.npc.maxHp`, 1);
+			integer(npc.hp, `${path}.npc.hp`, 0, npc.maxHp as number);
+			integer(npc.exp, `${path}.npc.exp`);
+		}
+		if (request.flee !== undefined && typeof request.flee !== 'boolean')
+			throw new Error(`${path}.flee: expected a boolean.`);
+		for (const key of ['onVictory', 'onFinish'])
+			if (request[key] !== undefined) actionsShape(request[key], `${path}.${key}`);
+		if (request.deathMessage !== undefined && typeof request.deathMessage !== 'function')
+			message(request.deathMessage, `${path}.deathMessage`);
+	},
 	wait: (value, path) => {
 		integer(value, path, 0, 60000);
 	},
@@ -229,6 +261,13 @@ export function walkActions(
 			} else if (entry.action === 'yesno') {
 				walk(entry.arg.yes, `${label}.arg.yes`, depth + 1);
 				walk(entry.arg.no, `${label}.arg.no`, depth + 1);
+			} else if (entry.action === 'dialogStart' || entry.action === 'victoryShow')
+				choices(entry.arg.choices, `${label}.arg.choices`, depth + 1);
+			else if (entry.action === 'encounterStart') {
+				if (entry.arg.onVictory !== undefined)
+					walk(entry.arg.onVictory, `${label}.arg.onVictory`, depth + 1);
+				if (entry.arg.onFinish !== undefined)
+					walk(entry.arg.onFinish, `${label}.arg.onFinish`, depth + 1);
 			} else if (entry.action === 'choicesPush') choices(entry.arg, `${label}.arg`, depth + 1);
 			else if (entry.action === 'itemFind')
 				walk(entry.arg.takeActions, `${label}.arg.takeActions`, depth + 1);

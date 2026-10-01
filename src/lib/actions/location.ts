@@ -12,7 +12,7 @@ async function setLocation(location: string | Location, state: GameState) {
 	state.throwIfCommandCancelled();
 	await state.location.moveTo(location);
 	state.throwIfCommandCancelled();
-	state.choices.set(state.location.current.choices ?? []);
+	state.resetInteractions();
 	// yield to Enter actions
 	if (state.location.current.enter) {
 		console.log(`[setLoc] About to yield enter actions for ${location}`);

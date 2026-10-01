@@ -28,6 +28,7 @@ export type LocationType = 'tile' | 'settlement' | 'poi' | 'room';
 export type EquipSlot = 'hand' | 'torso' | 'head' | 'feet';
 
 interface BaseItem extends Entity {
+	combatUse?: 'turn' | 'free' | 'forbidden';
 	rarity?: 'common' | 'rare' | 'mythical' | 'unique';
 }
 export interface Weapon extends BaseItem {

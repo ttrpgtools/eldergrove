@@ -1,3 +1,4 @@
+import type { DialogRequest } from '$state/interactions.svelte';
 import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 
@@ -25,4 +26,11 @@ export async function messageSet(state: GameState, msg: string, ctx: ActionConte
 	if (exclusive) msg = msg.substring(2);
 	msg = injectContext(msg, ctx);
 	state.message.set(msg, exclusive);
+}
+
+export async function dialogStart(state: GameState, request: DialogRequest) {
+	state.requestDialog(request);
+}
+export async function victoryShow(state: GameState, request: DialogRequest) {
+	state.showVictory(request);
 }

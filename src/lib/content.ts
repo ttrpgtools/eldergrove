@@ -135,6 +135,13 @@ export function inspectAdventure(
 			value.arg !== undefined
 		)
 			reference(value.arg, items, `${path}.arg`);
+		if (value.action === 'encounterStart' && typeof value.arg.npc === 'string')
+			reference(value.arg.npc, npcs, `${path}.arg.npc`);
+		if (
+			(value.action === 'dialogStart' || value.action === 'victoryShow') &&
+			value.arg.presentation?.image
+		)
+			asset(value.arg.presentation.image, `${path}.arg.presentation.image`);
 		if (value.action === 'itemFind') reference(value.arg.item, items, `${path}.arg.item`);
 		if (value.action === 'encounterRandomNpc' && value.arg.table !== undefined)
 			table(value.arg.table, `${path}.arg.table`, npcs);
@@ -236,6 +243,11 @@ export function inspectAdventure(
 		check(path, () => {
 			if (!['weapon', 'armor', 'consumable', 'trinket'].includes(String(entry.type)))
 				throw new Error('Invalid item type.');
+			if (
+				entry.combatUse !== undefined &&
+				!['turn', 'free', 'forbidden'].includes(String(entry.combatUse))
+			)
+				throw new Error('Invalid combat item-use policy.');
 			if (entry.type === 'armor') number(entry.defence, `${path}.defence`, 0);
 			if (entry.where !== undefined)
 				for (const slot of Array.isArray(entry.where) ? entry.where : [entry.where])

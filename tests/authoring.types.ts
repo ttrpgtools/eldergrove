@@ -74,3 +74,19 @@ function immutableContracts(state: GameState) {
 	action('npcDamage', { amount: 5, source: 'magic' });
 }
 void immutableContracts;
+
+function interactionContracts() {
+	action('dialogStart', { presentation: { title: 'Hello' }, choices: [] });
+	action('encounterStart', {
+		npc: 'test/boss',
+		flee: false,
+		onVictory: [action('victoryShow', { choices: [] })]
+	});
+	// @ts-expect-error dialogs require a choices array
+	action('dialogStart', { presentation: { title: 'Hello' } });
+	// @ts-expect-error encounter requests require an NPC
+	action('encounterStart', { flee: true });
+	// @ts-expect-error victory continuations retain nested argument contracts
+	action('encounterStart', { npc: 'test/boss', onVictory: [{ action: 'hpHeal' }] });
+}
+void interactionContracts;
