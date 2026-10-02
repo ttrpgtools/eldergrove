@@ -12,6 +12,7 @@ import { counterDec, counterInc, counterReset } from './counters';
 import { hpDamage, hpHeal } from './hp';
 import { diceMinZero, diceRoll } from './dice';
 import { npcDamage, npcHeal, npcLoot } from './npc';
+import { lootGrant } from './loot';
 import { branch, wait } from './control';
 import type { ArgumentField } from '$lib/arguments';
 import { encounterRandomNpc, encounterStart } from '$lib/games/encounter';
@@ -53,6 +54,7 @@ export const actions = {
 	npcDamage,
 	npcHeal,
 	npcLoot,
+	lootGrant,
 	shopStart,
 	shopFinish,
 	encounterRandomNpc,

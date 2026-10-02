@@ -18,6 +18,8 @@ export interface Entity extends Identifiable, Named {
 export interface Choice {
 	label: string;
 	description?: string;
+	/** Additional likely artwork for actions implemented as functions. */
+	preloadImages?: string[];
 	show?: Condition;
 	actions: Actions;
 }
@@ -96,6 +98,8 @@ export interface Experience extends AdvancedEntity {
 }
 export interface NpcTemplate extends Experience {
 	maxHp: number;
+	/** Each table is rolled independently, in addition to the existing items table. */
+	lootTables?: RandomTable<string>[];
 	defend?: (s: GameState, type: string, dmg: number) => number;
 }
 

@@ -4,8 +4,14 @@
 	import SceneWindow from '$lib/components/SceneWindow.svelte';
 	import Location from '$lib/components/Location.svelte';
 	import type { GameState } from '$state/game.svelte';
+	import { collectSceneImages, createImagePreloader } from '$lib/scene-images';
 
 	let { gamestate }: { gamestate: GameState } = $props();
+	const imagePreloader = createImagePreloader();
+	$effect(() => {
+		imagePreloader.update(collectSceneImages(gamestate, gamestate.availableChoices));
+		return imagePreloader.clear;
+	});
 	$effect(() => {
 		const session = gamestate;
 		// Lifecycle cleanup aborts pending work in the view being replaced.

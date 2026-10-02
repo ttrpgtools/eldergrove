@@ -104,6 +104,9 @@ export class RuntimeNpc extends RuntimeEntity<NpcTemplate> {
 	get items() {
 		return this.definition.items;
 	}
+	get lootTables() {
+		return this.definition.lootTables;
+	}
 	get defend() {
 		return this.definition.defend;
 	}

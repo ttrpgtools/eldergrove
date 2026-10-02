@@ -4,7 +4,7 @@ import { resolveNumber, type NumericValue } from '$lib/arguments';
 import type { ActionContext } from '$lib/types';
 import type { GameState } from '$state/game.svelte';
 import { minZero } from '$util/math';
-import { rollOnTable } from '$util/table';
+import { lootGrant } from './loot';
 
 export async function npcDamage(
 	state: GameState,
@@ -38,13 +38,9 @@ export async function npcLoot(state: GameState) {
 		state.character.coin += coin;
 		const leveled = state.character.gainExperience(npc.exp ?? 0);
 		state.message.append(` You found ${coin} coins and earned ${npc.exp} experience.`);
-		if (npc.items) {
-			const itemId = rollOnTable(npc.items, { state, ctx: state.actionContext });
-			const loot = await Promise.all(itemId.map((id) => state.data.items.get(id)));
-			for (const item of loot) {
-				await state.character.addToInventory(item);
-				state.message.append(`You also found: ${item.name}.`);
-			}
+		if (npc.items || npc.lootTables) {
+			const tables = [...(npc.items ? [npc.items] : []), ...(npc.lootTables ?? [])];
+			await lootGrant(state, tables);
 		}
 		if (leveled) {
 			state.message.append(` You leveled up!`);

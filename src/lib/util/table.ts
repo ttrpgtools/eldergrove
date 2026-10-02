@@ -9,6 +9,15 @@ export interface TableContext {
 	ctx?: ActionContext;
 	random?: RandomSource;
 }
+/** Roll each table once, preserving order and duplicate drops. */
+export function rollOnTables<T>(
+	tables: readonly (RandomTable<T> | T[])[],
+	options: TableContext = {}
+): T[] {
+	array(tables, 'random tables');
+	if (tables.length > 5000) throw new Error('Too many random tables.');
+	return tables.flatMap((table) => rollOnTable(table, options));
+}
 /** Conditions gate matches without renumbering ranges or rerolling inactive results. */
 export function rollOnTable<T>(table: RandomTable<T> | T[], options: TableContext = {}): T[] {
 	if (!Array.isArray(table)) object(table, 'random table');

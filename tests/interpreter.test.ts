@@ -4,7 +4,7 @@ import type { Actions } from '../src/lib/actions';
 import { createAuthoring, action, condition } from '../src/lib/authoring';
 import { integer } from '../src/lib/contracts';
 import { rollResult } from '../src/lib/arguments';
-import { rollOnTable } from '../src/lib/util/table';
+import { rollOnTable, rollOnTables } from '../src/lib/util/table';
 
 function adventure(): GameDef {
 	return {
@@ -187,5 +187,83 @@ describe('typed interpreter and extensions', () => {
 		const state = await session();
 		await expect(state.data.items.get('missing')).rejects.toThrow(Error);
 		await expect(state.data.npcs.get('missing')).rejects.toThrow(Error);
+	});
+	it('rolls independent tables once each and preserves duplicate results and empty matches', () => {
+		const random = vi.fn((min: number) => min);
+		expect(
+			rollOnTables<string>(
+				[
+					{ formula: 'd2', options: [{ trigger: 1, value: 'potion' }] },
+					{
+						formula: 'd4',
+						options: [
+							{ trigger: 1, value: 'potion' },
+							{ trigger: 1, value: 'sword' }
+						]
+					},
+					{ formula: 'd6', options: [{ trigger: 6, value: 'rare' }] }
+				],
+				{ random }
+			)
+		).toEqual(['potion', 'potion', 'sword']);
+		expect(random).toHaveBeenCalledTimes(3);
+		expect(rollOnTables([])).toEqual([]);
+	});
+	it('grants chest loot once through a flag-gated choice without requiring an NPC', async () => {
+		const game = adventure();
+		game.items = [{ id: 'potion', name: 'Potion', type: 'consumable' }];
+		game.locations[0].choices = [
+			{
+				label: 'Open chest',
+				show: condition('flagIsNotSet', 'chest-open'),
+				actions: [
+					action('lootGrant', [
+						{ formula: '1', options: [{ trigger: 1, value: 'potion' }] },
+						{ formula: '1', options: [{ trigger: 1, value: 'potion' }] }
+					]),
+					action('flagSet', 'chest-open')
+				]
+			}
+		];
+		const state = await session(game);
+		await state.choose(state.availableChoices[0]);
+		expect(state.character.getInventoryCount('potion')).toBe(2);
+		expect(state.availableChoices).toHaveLength(0);
+		expect(state.npc.current).toBeUndefined();
+		expect(state.message.text).toContain('Potion');
+	});
+	it('combines existing creature drops with independent loot tables and their conditions', async () => {
+		const game = adventure();
+		game.items = [{ id: 'potion', name: 'Potion', type: 'consumable' }];
+		game.npcTemplates[0].items = ['potion'];
+		game.npcTemplates[0].lootTables = [
+			{ formula: '1', options: [{ trigger: 1, value: 'potion' }] },
+			{
+				formula: '1',
+				options: [{ trigger: 1, value: 'potion', active: condition('flagIsSet', 'secret') }]
+			}
+		];
+		const state = await session(game);
+		await state.npc.set('rat');
+		expect(await state.runCommand([action('npcLoot')])).toBe('completed');
+		expect(state.character.getInventoryCount('potion')).toBe(2);
+	});
+	it('diagnoses invalid loot references and formulas before executing any hook', async () => {
+		const game = adventure();
+		const hook = vi.fn();
+		game.locations[0].enter = hook;
+		game.npcTemplates[0].lootTables = [{ formula: '(', options: [] }];
+		await expect(session(game)).rejects.toThrow('lootTables[0]');
+		game.npcTemplates[0].lootTables = [];
+		game.locations[0].choices = [
+			{
+				label: 'Chest',
+				actions: [
+					action('lootGrant', [{ formula: '1', options: [{ trigger: 1, value: 'missing-loot' }] }])
+				]
+			}
+		];
+		await expect(session(game)).rejects.toThrow('missing-loot');
+		expect(hook).not.toHaveBeenCalled();
 	});
 });

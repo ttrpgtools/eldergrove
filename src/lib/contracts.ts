@@ -1,5 +1,6 @@
 import type { Action, ActionName, Actions } from './actions';
 import type { Condition, ConditionName } from './conditions';
+import type { Choice } from './types';
 import { GAME_DICE_KEYS, validateDiceFormula } from './util/dice';
 
 export function object(value: unknown, path: string): Record<string, unknown> {
@@ -140,6 +141,12 @@ const actionArguments: Record<ActionName, (value: unknown, path: string) => void
 	locationReturn: noArgument,
 	messageClear: noArgument,
 	npcLoot: noArgument,
+	lootGrant: (value, path) => {
+		for (const [i, table] of array(value, path).entries()) {
+			if (Array.isArray(table)) table.forEach((id) => string(id, `${path}[${i}]`));
+			else array(object(table, `${path}[${i}]`).options, `${path}[${i}].options`);
+		}
+	},
 	shopFinish: noArgument,
 	choicesPush: (value, path) => {
 		array(value, path);
@@ -225,7 +232,8 @@ export function walkActions(
 	value: unknown,
 	path: string,
 	visit: (action: Action, path: string) => void = () => {},
-	visitCondition: (condition: Condition, path: string) => void = () => {}
+	visitCondition: (condition: Condition, path: string) => void = () => {},
+	visitChoice: (choice: Choice, path: string) => void = () => {}
 ): asserts value is Actions {
 	const ancestors = new Set<object>();
 	let count = 0;
@@ -240,6 +248,11 @@ export function walkActions(
 			if (choice.description !== undefined)
 				string(choice.description, `${path}[${index}].description`);
 			if (choice.show !== undefined) condition(choice.show, `${path}[${index}].show`);
+			if (choice.preloadImages !== undefined)
+				array(choice.preloadImages, `${path}[${index}].preloadImages`).forEach((src) =>
+					string(src, `${path}[${index}].preloadImages`)
+				);
+			visitChoice(choice as unknown as Choice, `${path}[${index}]`);
 			walk(choice.actions, `${path}[${index}].actions`, depth);
 		}
 	}

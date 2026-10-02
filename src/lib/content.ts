@@ -147,9 +147,17 @@ export function inspectAdventure(
 		if (value.action === 'itemFind') reference(value.arg.item, items, `${path}.arg.item`);
 		if (value.action === 'encounterRandomNpc' && value.arg.table !== undefined)
 			table(value.arg.table, `${path}.arg.table`, npcs);
+		if (value.action === 'lootGrant')
+			value.arg.forEach((value, i) => table(value, `${path}.arg[${i}]`, items));
+	}
+	function preloadImages(value: { preloadImages?: unknown }, path: string) {
+		if (value.preloadImages !== undefined)
+			array(value.preloadImages, `${path}.preloadImages`).forEach((value, i) =>
+				asset(string(value, `${path}.preloadImages[${i}]`), `${path}.preloadImages[${i}]`)
+			);
 	}
 	function actions(value: unknown, path: string) {
-		check(path, () => walkActions(value, path, action, condition));
+		check(path, () => walkActions(value, path, action, condition, preloadImages));
 	}
 	function table(value: unknown, path: string, collection: Map<string, unknown>) {
 		check(path, () => {
@@ -193,6 +201,13 @@ export function inspectAdventure(
 				else number(entry.coins, path, 0);
 			});
 		if (entry.items !== undefined) table(entry.items, `${path}.items`, items);
+		if (entry.lootTables !== undefined)
+			check(`${path}.lootTables`, () => {
+				array(entry.lootTables, `${path}.lootTables`).forEach((value, i) => {
+					object(value, `${path}.lootTables[${i}]`);
+					table(value, `${path}.lootTables[${i}]`, items);
+				});
+			});
 	}
 	check('game', () => {
 		string(game.id, 'id');
@@ -213,6 +228,7 @@ export function inspectAdventure(
 					string(choice.label, path);
 					if (choice.description !== undefined)
 						string(choice.description, `${path}.choices[${i}].description`);
+					preloadImages(choice, `${path}.choices[${i}]`);
 					if (choice.show !== undefined) {
 						assertCondition(choice.show, path);
 						condition(choice.show, `${path}.choices[${i}].show`);

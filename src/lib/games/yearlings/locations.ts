@@ -30,42 +30,46 @@ export const locations: Location[] = [
 		exit: [{ action: 'counterReset', arg: 'yearlings/grassy-field:wins' }],
 		choices: [
 			{
-				actions: (s) =>
-					encounterRandomNpc(s, {
-						table: [
-							'yearlings/rat',
-							'yearlings/imp',
-							'yearlings/fox',
-							'yearlings/mongoose',
-							'yearlings/wolf',
-							'yearlings/warlock',
-							'yearlings/goblin',
-							'yearlings/bear',
-							'yearlings/xas',
-							'yearlings/geist'
-						],
-						followBy: async (s) => {
-							if (
-								counterIsEqual(s, ['yearlings/grassy-field:wins', 3]) &&
-								s.character.getInventoryCount('yearlings/pendant') === 0 &&
-								!s.character.flags.has('returned-pendant')
-							) {
-								await itemFind(s, {
-									item: 'yearlings/pendant',
-									takeActions: []
-								});
-							} else if (
-								s.character.flags.has('returned-pendant') &&
-								!s.character.flags.has('found-rope') &&
-								counterIsEqual(s, ['yearlings/grassy-field:wins', 3])
-							) {
-								await itemFind(s, {
-									item: 'yearlings/old-rope',
-									takeActions: [{ action: 'flagSet', arg: 'found-rope' }]
-								});
+				actions: [
+					{
+						action: 'encounterRandomNpc',
+						arg: {
+							table: [
+								'yearlings/rat',
+								'yearlings/imp',
+								'yearlings/fox',
+								'yearlings/mongoose',
+								'yearlings/wolf',
+								'yearlings/warlock',
+								'yearlings/goblin',
+								'yearlings/bear',
+								'yearlings/xas',
+								'yearlings/geist'
+							],
+							followBy: async (s) => {
+								if (
+									counterIsEqual(s, ['yearlings/grassy-field:wins', 3]) &&
+									s.character.getInventoryCount('yearlings/pendant') === 0 &&
+									!s.character.flags.has('returned-pendant')
+								) {
+									await itemFind(s, {
+										item: 'yearlings/pendant',
+										takeActions: []
+									});
+								} else if (
+									s.character.flags.has('returned-pendant') &&
+									!s.character.flags.has('found-rope') &&
+									counterIsEqual(s, ['yearlings/grassy-field:wins', 3])
+								) {
+									await itemFind(s, {
+										item: 'yearlings/old-rope',
+										takeActions: [{ action: 'flagSet', arg: 'found-rope' }]
+									});
+								}
 							}
 						}
-					}),
+					}
+				],
 				label: 'Explore'
 			},
 			{
@@ -87,29 +91,33 @@ export const locations: Location[] = [
 		image: '/img/location/rocky-area.webp',
 		choices: [
 			{
-				actions: async (s) =>
-					await encounterRandomNpc(s, {
-						table: [
-							'yearlings/druid',
-							'yearlings/demon',
-							'yearlings/dactyl',
-							'yearlings/cyclops',
-							'yearlings/t-rex',
-							'yearlings/ogre',
-							'yearlings/troll',
-							'yearlings/sidewinder',
-							'yearlings/cave-monkey',
-							'yearlings/paramanthis'
-						],
-						followBy: async (s) => {
-							if (
-								!s.character.flags.has('beat-morlin') &&
-								counterIsEqual(s, ['yearlings/rocky-area:wins', 3])
-							) {
-								await locationChange(s, 'yearlings/morlin-cave');
+				actions: [
+					{
+						action: 'encounterRandomNpc',
+						arg: {
+							table: [
+								'yearlings/druid',
+								'yearlings/demon',
+								'yearlings/dactyl',
+								'yearlings/cyclops',
+								'yearlings/t-rex',
+								'yearlings/ogre',
+								'yearlings/troll',
+								'yearlings/sidewinder',
+								'yearlings/cave-monkey',
+								'yearlings/paramanthis'
+							],
+							followBy: async (s) => {
+								if (
+									!s.character.flags.has('beat-morlin') &&
+									counterIsEqual(s, ['yearlings/rocky-area:wins', 3])
+								) {
+									await locationChange(s, 'yearlings/morlin-cave');
+								}
 							}
 						}
-					}),
+					}
+				],
 
 				label: 'Explore'
 			},
