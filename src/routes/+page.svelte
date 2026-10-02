@@ -7,8 +7,8 @@
 		<img src="/img/eldergrove-banner.webp" alt="Eldergrove" />
 	</header>
 	<div class="w-full max-w-6xl p-8">
-		If you are here, then thank you for agreeing to help test Eldergrove. It is very early and there
-		are many issues already known. The code and issues are available here:
+	Welcome to the Eldergrove! We are growing simple retro style RPG games for your enjoyment.
+	If you want to use this "engine" to create your own adventure, you can view and fork the code below.
 		<a class="block pt-4 text-emerald-300" href="https://github.com/ttrpgtools/eldergrove"
 			>https://github.com/ttrpgtools/eldergrove</a
 		>
