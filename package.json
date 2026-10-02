@@ -5,13 +5,13 @@
 	"scripts": {
 		"dev": "vite dev --port 5513",
 		"build": "npm run validate:content && vite build",
-		"validate:content": "vitest run tests/content.test.ts",
+		"validate:content": "svelte-kit sync && vitest run tests/content.test.ts",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"test": "vitest run"
+		"test": "svelte-kit sync && vitest run"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10",
